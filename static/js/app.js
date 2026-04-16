@@ -30,13 +30,17 @@
 
   async function loadBootstrap() {
     const response = await fetch("/api/bootstrap", { method: "GET" });
+    const payload = await response.json().catch(() => ({}));
     if (!response.ok) {
-      throw new Error("無法讀取活動資訊，請稍後再試。");
+      throw new Error(payload.message || "無法讀取活動資訊，請稍後再試。");
     }
-    state.bootstrap = await response.json();
+    state.bootstrap = payload;
     state.openHour = state.bootstrap.open_hour || 12;
 
-    ui.globalNotice.textContent = state.bootstrap.notice || "";
+    const notices = [state.bootstrap.notice || "", state.bootstrap.warning || ""]
+      .filter(Boolean)
+      .join(" ");
+    ui.globalNotice.textContent = notices;
 
     if (state.bootstrap.sold_out) {
       ui.countdown.textContent = "目前已額滿";

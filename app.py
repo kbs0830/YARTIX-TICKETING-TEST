@@ -254,11 +254,21 @@ def index():
 
 @app.route('/api/bootstrap', methods=['GET'])
 def api_bootstrap():
-    rem = remaining_seats()
+    warning_message = ''
+    try:
+        rem = remaining_seats()
+    except Exception as e:
+        # 即使 Sheet 暫時不可用，也先讓前端能載入並顯示表單。
+        rem = sum(INITIAL_SEATS_PER_CAR)
+        warning_message = '目前無法同步剩餘座位，系統已切換為暫時模式，仍可先填寫報名資料。'
+        print('Bootstrap fallback:', e)
+
     return jsonify({
+        'ok': True,
         'remaining': rem,
         'sold_out': rem <= 0,
         'notice': REAL_NAME_NOTICE,
+        'warning': warning_message,
         'open_hour': OPEN_HOUR,
         'ticket_types': TICKET_TYPES,
         'food_types': FOOD_TYPES,
