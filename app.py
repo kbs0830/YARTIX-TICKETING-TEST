@@ -36,9 +36,9 @@ OPEN_HOUR = 12
 REGISTRATION_END_DATE = os.environ.get('REGISTRATION_END_DATE', '2026-06-06')
 
 BANK_INFO = {
-'銀行': os.environ.get('BANK_NAME', '請設定 BANK_NAME'),
-'帳號': os.environ.get('BANK_ACCOUNT', '請設定 BANK_ACCOUNT'),
-'戶名': os.environ.get('BANK_HOLDER', '請設定 BANK_HOLDER')
+    '銀行': '中國信託銀行822',
+    '帳號': '7835-4029-2705',
+    '戶名': '雲觀藝術工作室',
 }
 
 # ---------------- Google Sheets ----------------
@@ -256,6 +256,14 @@ def build_registration_rows(participants):
 @app.route('/')
 def index():
     return render_template('index.html')
+
+
+@app.after_request
+def add_no_cache_headers(response):
+    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    return response
 
 
 @app.route('/api/bootstrap', methods=['GET'])

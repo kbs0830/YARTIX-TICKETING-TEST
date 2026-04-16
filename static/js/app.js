@@ -6,12 +6,14 @@
   };
 
   const ui = {
+    heroSection: document.getElementById("heroSection"),
     countdown: document.getElementById("countdown"),
     globalNotice: document.getElementById("globalNotice"),
     launcher: document.getElementById("launcher"),
     countInput: document.getElementById("countInput"),
     agree: document.getElementById("agree"),
     startBtn: document.getElementById("startBtn"),
+    launcherMessage: document.getElementById("launcherMessage"),
     formSection: document.getElementById("formSection"),
     participantsContainer: document.getElementById("participantsContainer"),
     submitBtn: document.getElementById("submitBtn"),
@@ -26,6 +28,14 @@
   function toInt(value, fallback = 0) {
     const n = Number.parseInt(value, 10);
     return Number.isNaN(n) ? fallback : n;
+  }
+
+  function setMessage(element, text, className) {
+    if (!element) {
+      return;
+    }
+    element.textContent = text;
+    element.className = className;
   }
 
   async function loadBootstrap() {
@@ -71,7 +81,7 @@
       const hours = Math.floor((diff % 86400) / 3600);
       const mins = Math.floor((diff % 3600) / 60);
       const secs = diff % 60;
-      ui.countdown.textContent = `報名開放中，距離 ${state.registrationEndDate} 截止還有 ${days} 天 ${hours} 小時 ${mins} 分 ${secs} 秒`;
+      ui.countdown.textContent = `距離 ${state.registrationEndDate} 截止還有 ${days} 天 ${hours} 小時 ${mins} 分 ${secs} 秒`;
       ui.launcher.classList.remove("hidden-ui");
     };
 
@@ -331,6 +341,24 @@
     return true;
   }
 
+  function getSerialValue(person) {
+    const directKeys = ["報名序號", "序號", "serial_number", "serial", "registration_serial", "車次"];
+    for (const key of directKeys) {
+      const value = person[key];
+      if (value !== undefined && value !== null && String(value).trim() !== "") {
+        return String(value);
+      }
+    }
+
+    for (const [key, value] of Object.entries(person)) {
+      if (/序號|serial/i.test(key) && value !== undefined && value !== null && String(value).trim() !== "") {
+        return String(value);
+      }
+    }
+
+    return "";
+  }
+
   function renderConfirm(result) {
     ui.confirmCount.textContent = `本次報名 ${result.data.length} 位參加者，總金額 NT$ ${result.total_amount}`;
 
@@ -342,15 +370,18 @@
 
     ui.summaryTableBody.innerHTML = result.data
       .map(
-        (person) => `
+        (person) => {
+          const serialText = getSerialValue(person);
+          return `
       <tr>
         <td>${escapeHtml(person["姓名"])}</td>
         <td>${escapeHtml(person["票種"])}</td>
         <td>${escapeHtml(person["金額"])}</td>
         <td>${escapeHtml(person["匯款末四碼"])}</td>
-        <td>${escapeHtml(person["報名序號"] || "")}</td>
+        <td>${escapeHtml(serialText)}</td>
       </tr>
-    `
+    `;
+        }
       )
       .join("");
 
@@ -401,16 +432,23 @@
   function onStartClick() {
     const count = Math.min(10, Math.max(1, toInt(ui.countInput.value, 1)));
     if (!ui.agree.checked) {
-      ui.submitMessage.textContent = "請先勾選同意活動規範與退費條款。";
-      ui.submitMessage.className = "submit-message error";
+      setMessage(ui.launcherMessage, "請先勾選同意活動規範與退費條款。", "submit-message error");
       return;
     }
 
+    setMessage(ui.launcherMessage, "", "submit-message");
     createParticipantCards(count);
-    ui.formSection.classList.remove("hidden-ui");
-    ui.confirmSection.classList.add("hidden-ui");
-    ui.submitMessage.textContent = "";
-    ui.formSection.scrollIntoView({ behavior: "smooth", block: "start" });
+    if (ui.heroSection) {
+      ui.heroSection.classList.add("hidden-ui");
+    }
+    if (ui.formSection) {
+      ui.formSection.classList.remove("hidden-ui");
+    }
+    if (ui.confirmSection) {
+      ui.confirmSection.classList.add("hidden-ui");
+    }
+    setMessage(ui.submitMessage, "", "submit-message");
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   async function init() {
