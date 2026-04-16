@@ -71,8 +71,11 @@ def get_google_sheet():
     '序號'
     ]
 
-    if sheet.row_values(1) == []:
+    existing_headers = sheet.row_values(1)
+    if existing_headers == []:
         sheet.append_row(header_row)
+    else:
+        sheet.update('A1:O1', [header_row])
 
     return sheet
 
@@ -89,7 +92,7 @@ def remaining_seats():
 
     return max(0, total_seats - booked)
 
-# ---------------- 車次分配 ----------------
+# ---------------- 序號處理 ----------------
 
 def build_serial_code(timestamp_text, sequence_number):
     date_text = timestamp_text[:10].replace('-', '')
@@ -153,16 +156,6 @@ def validate_participant(person):
 
 def assign_serial(index, timestamp_text):
     return build_serial_code(timestamp_text, index + 1)
-
-
-def assign_car(index):
-
-    seats_counted = 0
-    for idx, seat in enumerate(INITIAL_SEATS_PER_CAR):
-        seats_counted += seat
-        if index < seats_counted:
-            return f'車次 {idx+1}'
-    return "未分配"
 
 # ---------------- Google Sheet 寫入 ----------------
 
