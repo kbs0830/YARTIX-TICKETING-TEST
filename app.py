@@ -33,6 +33,7 @@ ADDONS = {
 DINNER_PRICE = 80
 REAL_NAME_NOTICE = '本次活動採實名制，活動當日請攜帶身份證明（身份證或健保卡電子證明）'
 OPEN_HOUR = 12
+REGISTRATION_END_DATE = os.environ.get('REGISTRATION_END_DATE', '2026-06-06')
 
 BANK_INFO = {
 '銀行': os.environ.get('BANK_NAME', '請設定 BANK_NAME'),
@@ -270,6 +271,7 @@ def api_bootstrap():
         'notice': REAL_NAME_NOTICE,
         'warning': warning_message,
         'open_hour': OPEN_HOUR,
+        'registration_end_date': REGISTRATION_END_DATE,
         'ticket_types': TICKET_TYPES,
         'food_types': FOOD_TYPES,
         'addons': ADDONS,

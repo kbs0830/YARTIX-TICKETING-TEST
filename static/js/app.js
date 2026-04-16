@@ -1,7 +1,7 @@
 (() => {
   const state = {
     bootstrap: null,
-    openHour: 12,
+    registrationEndDate: "2026-06-06",
     countdownTimer: null,
   };
 
@@ -35,7 +35,7 @@
       throw new Error(payload.message || "無法讀取活動資訊，請稍後再試。");
     }
     state.bootstrap = payload;
-    state.openHour = state.bootstrap.open_hour || 12;
+    state.registrationEndDate = state.bootstrap.registration_end_date || "2026-06-06";
 
     const notices = [state.bootstrap.notice || "", state.bootstrap.warning || ""]
       .filter(Boolean)
@@ -58,21 +58,21 @@
 
     const tick = () => {
       const now = new Date();
-      const openTime = new Date();
-      openTime.setHours(state.openHour, 0, 0, 0);
-      const diff = Math.floor((openTime.getTime() - now.getTime()) / 1000);
+      const endTime = new Date(`${state.registrationEndDate}T23:59:59`);
+      const diff = Math.floor((endTime.getTime() - now.getTime()) / 1000);
 
-      if (diff <= 0) {
-        ui.countdown.textContent = "報名已開放";
-        ui.launcher.classList.remove("hidden-ui");
+      if (diff < 0) {
+        ui.countdown.textContent = "報名已截止";
+        ui.launcher.classList.add("hidden-ui");
         return;
       }
 
-      const hours = Math.floor(diff / 3600);
+      const days = Math.floor(diff / 86400);
+      const hours = Math.floor((diff % 86400) / 3600);
       const mins = Math.floor((diff % 3600) / 60);
       const secs = diff % 60;
-      ui.countdown.textContent = `距離開放 ${hours} 小時 ${mins} 分 ${secs} 秒`;
-      ui.launcher.classList.add("hidden-ui");
+      ui.countdown.textContent = `報名開放中，距離 ${state.registrationEndDate} 截止還有 ${days} 天 ${hours} 小時 ${mins} 分 ${secs} 秒`;
+      ui.launcher.classList.remove("hidden-ui");
     };
 
     tick();
