@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>報名表單</title>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+
+<style>
+body {
+    padding:20px;
+    background:linear-gradient(to right,#f8f9fa,#e9ecef);
+}
+
+/* 手機優化 */
+@media (min-width:768px){
+    body { padding:40px; }
+}
+
+.step { display:none; }
+.step.active { display:block; }
+
+/* 進度條 */
+.progress-step {
+    display:flex;
+    justify-content:space-between;
+    margin-bottom:20px;
+    font-size:14px;
+}
+.progress-step div {
+    flex:1;
+    text-align:center;
+    padding:8px;
+    border-bottom:3px solid #ccc;
+    color:#999;
+}
+.progress-step .active {
+    border-color:#0d6efd;
+    color:#0d6efd;
+}
+
+/* 卡片優化 */
+.card {
+    border-radius:15px;
+    box-shadow:0 4px 12px rgba(0,0,0,0.1);
+}
+</style>
+</head>
+
+<body>
+<div class="container">
+
+{% if remaining > 0 %}
+
+<h2 class="text-center mb-3">報名表單</h2>
+
+<div class="alert alert-warning text-center">
+⚠️ 請於 七天 內完成匯款
+</div>
+
+<!-- 進度條 -->
+<div class="progress-step" id="progressBar">
+    <div class="active">1. 基本資料</div>
+    <div>2. 票種</div>
+    <div>3. 匯款</div>
+</div>
+
+<form action="{{ url_for('submit') }}" method="POST">
+
+{% for i in range(count) %}
+
+<div class="card mb-3 p-3">
+<div class="card-body">
+<h5 class="text-primary">第 {{ i+1 }} 位參加者</h5>
+
+<!-- STEP 1 -->
+<div class="step active">
+
+<input type="text" name="name[]" class="form-control mb-2" placeholder="姓名" required>
+<select name="gender[]" class="form-select mb-2" required>
+<option value="">選擇性別</option>
+<option>男</option>
+<option>女</option>
+</select>
+<input type="date" name="dob[]" class="form-control mb-2" required>
+<input type="text" name="id_number[]" class="form-control mb-2" placeholder="身分證" required>
+<input type="text" name="phone[]" class="form-control mb-2" placeholder="電話" required>
+<input type="email" name="email[]" class="form-control mb-2" placeholder="Email" required>
+
+<button type="button" class="btn btn-primary w-100 nextBtn">下一步</button>
+</div>
+
+<!-- STEP 2 -->
+<div class="step">
+
+<select name="ticket_type[]" class="form-select mb-2" required>
+<option value="">選擇票種</option>
+{% for key, price in ticket_types.items() %}
+<option value="{{ key }}">{{ key }} ({{ price }}元)</option>
+{% endfor %}
+</select>
+
+<select name="food_types[]" class="form-select mb-2" required>
+<option value="">飲食選擇</option>
+<option>葷</option>
+<option>素</option>
+</select>
+
+{% for key, addon in addons.items() %}
+<div class="mb-2">
+{{ addon.label }} (+{{ addon.price }})
+<input type="number" name="addon_{{ key }}_qty[]" value="0" min="0" class="form-control">
+</div>
+{% endfor %}
+
+<button type="button" class="btn btn-secondary w-100 mb-2 prevBtn">上一步</button>
+<button type="button" class="btn btn-primary w-100 nextBtn">下一步</button>
+</div>
+
+<!-- STEP 3 -->
+<div class="step">
+
+<div class="alert alert-success">
+中國信託銀行（822）汐止分行<br>
+戶名：雲觀藝術工作室<br>
+帳號：7835-4029-2705
+</div>
+
+<input type="text" name="bank_name[]" class="form-control mb-2" placeholder="匯款銀行" required>
+<input type="text" name="bank_last4[]" class="form-control mb-2" placeholder="末四碼" required>
+
+<input type="text" name="note[]" class="form-control mb-2" placeholder="備註">
+
+<button type="button" class="btn btn-secondary w-100 mb-2 prevBtn">上一步</button>
+<button type="submit" class="btn btn-success w-100">提交報名</button>
+
+</div>
+
+</div>
+</div>
+
+{% endfor %}
+</form>
+
+{% endif %}
+</div>
+
+<script>
+const steps = document.querySelectorAll(".step");
+const progress = document.querySelectorAll("#progressBar div");
+
+function validateStep(step){
+    let inputs = step.querySelectorAll("input, select");
+    for(let input of inputs){
+        if(!input.checkValidity()){
+            input.reportValidity();
+            return false;
+        }
+    }
+    return true;
+}
+
+function updateProgress(index){
+    progress.forEach((el,i)=>{
+        el.classList.toggle("active", i === index);
+    });
+}
+
+document.querySelectorAll(".nextBtn").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+        let step = btn.closest(".step");
+
+        if(!validateStep(step)) return;
+
+        let next = step.nextElementSibling;
+        let index = [...steps].indexOf(next);
+
+        step.classList.remove("active");
+        next.classList.add("active");
+        updateProgress(index);
+    });
+});
+
+document.querySelectorAll(".prevBtn").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+        let step = btn.closest(".step");
+        let prev = step.previousElementSibling;
+        let index = [...steps].indexOf(prev);
+
+        step.classList.remove("active");
+        prev.classList.add("active");
+        updateProgress(index);
+    });
+});
+</script>
+
+</body>
+</html>

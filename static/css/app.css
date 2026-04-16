@@ -1,0 +1,261 @@
+:root {
+  --bg-a: #091d2b;
+  --bg-b: #114b5f;
+  --bg-c: #1a936f;
+  --panel: rgba(255, 255, 255, 0.93);
+  --text-main: #173042;
+  --text-sub: #456176;
+  --accent: #0f766e;
+  --accent-hover: #0b5f59;
+  --danger: #c0392b;
+  --ok: #176038;
+  --radius: 18px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+  color: var(--text-main);
+  background:
+    radial-gradient(circle at 12% 18%, rgba(255, 255, 255, 0.22), transparent 35%),
+    radial-gradient(circle at 82% 75%, rgba(26, 147, 111, 0.38), transparent 42%),
+    linear-gradient(140deg, var(--bg-a), var(--bg-b) 52%, var(--bg-c));
+  background-attachment: fixed;
+}
+
+.page-wrap {
+  width: min(980px, calc(100% - 24px));
+  margin: 24px auto 32px;
+  display: grid;
+  gap: 18px;
+}
+
+.hero-card,
+.form-shell,
+.confirm-shell {
+  background: var(--panel);
+  border-radius: var(--radius);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.22);
+  padding: 20px;
+  animation: reveal 0.45s ease;
+}
+
+.eyebrow {
+  margin: 0;
+  color: #0c4a6e;
+  font-size: 0.75rem;
+  letter-spacing: 0.18em;
+  font-weight: 700;
+}
+
+.main-title {
+  margin: 8px 0 6px;
+  font-size: clamp(1.7rem, 5vw, 2.4rem);
+  font-weight: 800;
+  color: #0d3b66;
+}
+
+.sub-title {
+  margin: 0 0 12px;
+  color: var(--text-sub);
+}
+
+.countdown-panel {
+  background: linear-gradient(110deg, #0d3b66, #0f766e);
+  color: #f8fafc;
+  border-radius: 12px;
+  padding: 12px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.remaining-info,
+.global-notice {
+  margin: 10px 0 0;
+  color: var(--text-sub);
+  font-size: 0.96rem;
+}
+
+.launcher {
+  margin-top: 14px;
+}
+
+.btn-ticket,
+.btn-submit,
+.btn-line {
+  border: none;
+  border-radius: 12px;
+  padding: 12px 16px;
+  font-weight: 700;
+}
+
+.btn-ticket,
+.btn-submit {
+  background: var(--accent);
+  color: #f8fafc;
+}
+
+.btn-ticket:hover,
+.btn-submit:hover {
+  background: var(--accent-hover);
+  color: #f8fafc;
+}
+
+.hidden-ui {
+  display: none;
+}
+
+.section-head h2,
+.confirm-shell h2 {
+  margin: 0;
+  color: #103b54;
+  font-weight: 800;
+}
+
+.section-head p {
+  margin: 8px 0 0;
+  color: var(--text-sub);
+}
+
+.participant-card {
+  margin-top: 14px;
+  border: 1px solid rgba(15, 118, 110, 0.24);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.76);
+  overflow: hidden;
+}
+
+.participant-head {
+  padding: 12px 14px;
+  background: #ecfeff;
+  border-bottom: 1px solid #bae6fd;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.participant-head h3 {
+  margin: 0;
+  font-size: 1rem;
+  color: #0f172a;
+}
+
+.step-pill {
+  font-size: 0.82rem;
+  color: #155e75;
+  background: #cffafe;
+  padding: 4px 10px;
+  border-radius: 999px;
+}
+
+.participant-body {
+  padding: 14px;
+}
+
+.step-panel {
+  display: none;
+}
+
+.step-panel.active {
+  display: block;
+}
+
+.step-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.step-actions .btn {
+  border-radius: 10px;
+}
+
+.step-actions .btn-primary {
+  background: #0d9488;
+  border-color: #0d9488;
+}
+
+.step-actions .btn-secondary {
+  background: #64748b;
+  border-color: #64748b;
+}
+
+.submit-bar {
+  margin-top: 16px;
+}
+
+.submit-message {
+  min-height: 22px;
+  margin: 10px 0 0;
+  font-weight: 700;
+}
+
+.submit-message.error {
+  color: var(--danger);
+}
+
+.submit-message.ok {
+  color: var(--ok);
+}
+
+.bank-list {
+  margin: 12px 0;
+  padding-left: 18px;
+}
+
+.btn-line {
+  background: #06c755;
+  color: #ffffff;
+}
+
+.btn-line:hover {
+  background: #05ac4a;
+  color: #ffffff;
+}
+
+input,
+select,
+button {
+  font-size: 16px !important;
+}
+
+@media (max-width: 768px) {
+  .page-wrap {
+    width: calc(100% - 14px);
+    margin: 14px auto 20px;
+  }
+
+  .hero-card,
+  .form-shell,
+  .confirm-shell {
+    padding: 14px;
+    border-radius: 14px;
+  }
+
+  .step-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .participant-head {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+@keyframes reveal {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

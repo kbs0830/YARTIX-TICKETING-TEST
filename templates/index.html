@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>活動報名 - 2026 春映洄瀾，拾光</title>
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="/static/css/app.css">
+</head>
+<body>
+
+<main class="page-wrap">
+  <section class="hero-card">
+    <p class="eyebrow">YARTIX TICKETING</p>
+    <h1 class="main-title">春映洄瀾，拾光</h1>
+    <p class="sub-title">2026.06.06 普悠瑪縱谷深度專列線上報名</p>
+
+    <div id="countdown" class="countdown-panel">載入中...</div>
+    <p id="globalNotice" class="global-notice"></p>
+
+    <div id="launcher" class="launcher hidden-ui">
+      <label for="countInput" class="form-label">報名人數 (1-10)</label>
+      <input id="countInput" type="number" min="1" max="10" value="1" class="form-control form-control-lg" required>
+
+      <div class="form-check mt-3 mb-3">
+        <input class="form-check-input" type="checkbox" id="agree" required>
+        <label class="form-check-label" for="agree">我已詳閱並同意活動規範與退費條款</label>
+      </div>
+
+      <button id="startBtn" class="btn btn-ticket w-100">開始填寫報名資料</button>
+    </div>
+  </section>
+
+  <section id="formSection" class="form-shell hidden-ui">
+    <div class="section-head">
+      <h2>報名資料</h2>
+      <p>每位參加者分為 3 個步驟，資料填完後再一起送出。</p>
+    </div>
+
+    <div id="participantsContainer"></div>
+
+    <div class="submit-bar">
+      <button id="submitBtn" class="btn btn-submit w-100">送出報名</button>
+      <p id="submitMessage" class="submit-message"></p>
+    </div>
+  </section>
+
+  <section id="confirmSection" class="confirm-shell hidden-ui">
+    <h2>報名成功</h2>
+    <p id="confirmCount"></p>
+    <ul id="bankInfoList" class="bank-list"></ul>
+    <div class="table-responsive">
+      <table class="table table-striped table-bordered align-middle text-center" id="summaryTable">
+        <thead>
+          <tr>
+            <th>姓名</th>
+            <th>票種</th>
+            <th>金額</th>
+            <th>末四碼</th>
+            <th>序號</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <a id="lineLink" class="btn btn-line" target="_blank" rel="noreferrer">加入 LINE 群組</a>
+  </section>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="/static/js/app.js"></script>
+</body>
+</html>
