@@ -348,7 +348,7 @@
         <td>${escapeHtml(person["票種"])}</td>
         <td>${escapeHtml(person["金額"])}</td>
         <td>${escapeHtml(person["匯款末四碼"])}</td>
-        <td>${escapeHtml(person["序號"] || "")}</td>
+        <td>${escapeHtml(person["報名序號"] || "")}</td>
       </tr>
     `
       )

@@ -69,7 +69,7 @@ def get_google_sheet():
     '報名時間',
     '加購_easycard',
     '金額',
-    '序號'
+    '報名序號'
     ]
 
     existing_headers = sheet.row_values(1)
@@ -170,7 +170,7 @@ def google_sheets_append_safe(data_list):
         '報名時間',
         '加購_easycard',
         '金額',
-        '序號'
+        '報名序號'
         ]
 
         existing_records = sheet.get_all_records()
@@ -239,7 +239,7 @@ def build_registration_rows(participants):
             '備註': person.get('note', ''),
             '報名時間': timestamp,
             '金額': person_total,
-            '序號': serial_number,
+            '報名序號': serial_number,
         }
         row.update(addon_quantities)
         new_data.append(row)
