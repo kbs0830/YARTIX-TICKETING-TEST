@@ -35,9 +35,9 @@ REAL_NAME_NOTICE = '本次活動採實名制，活動當日請攜帶身份證明
 OPEN_HOUR = 12
 
 BANK_INFO = {
-'銀行': '中國信託銀行822',
-'帳號': '7835-4029-2705',
-'戶名': '雲觀藝術工作室'
+'銀行': os.environ.get('BANK_NAME', '請設定 BANK_NAME'),
+'帳號': os.environ.get('BANK_ACCOUNT', '請設定 BANK_ACCOUNT'),
+'戶名': os.environ.get('BANK_HOLDER', '請設定 BANK_HOLDER')
 }
 
 # ---------------- Google Sheets ----------------

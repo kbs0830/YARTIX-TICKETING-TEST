@@ -8,6 +8,12 @@ services:
     envVars:
       - key: PYTHON_VERSION
         value: 3.14.0
+      - key: BANK_NAME
+        sync: false
+      - key: BANK_ACCOUNT
+        sync: false
+      - key: BANK_HOLDER
+        sync: false
       - key: GOOGLE_SHEET_NAME
         sync: false
       - key: GOOGLE_CREDENTIALS_JSON
