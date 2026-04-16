@@ -55,6 +55,11 @@ def get_google_sheet():
             scope
         )
     else:
+        if not os.path.exists(GOOGLE_CREDENTIALS):
+            raise RuntimeError(
+                '找不到 Google 憑證。請在 Render 設定 GOOGLE_CREDENTIALS_JSON，'
+                '或提供有效的 GOOGLE_CREDENTIALS_PATH。'
+            )
         creds = ServiceAccountCredentials.from_json_keyfile_name(
             GOOGLE_CREDENTIALS,
             scope
@@ -285,7 +290,14 @@ def api_register():
     payload = request.get_json(silent=True) or {}
     participants = payload.get('participants', [])
 
-    ok, message, new_data, total_amount = build_registration_rows(participants)
+    try:
+        ok, message, new_data, total_amount = build_registration_rows(participants)
+    except Exception as e:
+        return jsonify({
+            'ok': False,
+            'message': f'報名系統暫時無法連線資料庫：{str(e)}'
+        }), 503
+
     if not ok:
         return jsonify({'ok': False, 'message': message}), 400
 
