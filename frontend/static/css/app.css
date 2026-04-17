@@ -22,16 +22,20 @@ body {
   min-height: 100vh;
   font-family: "Noto Sans TC", "Microsoft JhengHei", sans-serif;
   color: var(--text-main);
-  background:
-    linear-gradient(rgba(7, 18, 28, 0.45), rgba(7, 18, 28, 0.58)),
-    url('/static/www.png') center center / cover no-repeat fixed;
+  background: linear-gradient(135deg, #0a2233, #114b5f 60%, #1a936f);
   background-attachment: fixed;
   line-height: 1.5;
 }
 
+body.bg-ready {
+  background:
+    linear-gradient(rgba(7, 18, 28, 0.45), rgba(7, 18, 28, 0.58)),
+    url('/static/www.png') center center / cover no-repeat fixed;
+}
+
 .page-wrap {
   width: min(980px, calc(100% - 24px));
-  margin: 24px auto 32px;
+  margin: clamp(48px, 9vh, 96px) auto 32px;
   display: grid;
   gap: 18px;
 }
@@ -62,9 +66,13 @@ body {
 
 .main-title {
   margin: 8px 0 6px;
-  font-size: clamp(1.7rem, 5vw, 2.4rem);
+  font-size: clamp(1.35rem, 3.9vw, 2rem);
   font-weight: 800;
   color: #0d3b66;
+  line-height: 1.35;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+  text-align: center;
 }
 
 .sub-title {
@@ -92,6 +100,40 @@ body {
   margin-top: 14px;
 }
 
+/* Keep visual order stable even if stale template order is served.
+   Desired: count input -> policy -> agree -> start button */
+#launcher {
+  display: flex;
+  flex-direction: column;
+}
+
+#launcher > label[for="countInput"] {
+  order: 1;
+}
+
+#launcher > #countInput {
+  order: 2;
+}
+
+#launcher > #policyDrawer,
+#launcher > .policy-drawer {
+  order: 3;
+}
+
+#launcher > #agree,
+#launcher > .form-check {
+  order: 4;
+}
+
+#launcher > #startBtn,
+#launcher > .btn-ticket {
+  order: 5;
+}
+
+#launcher > #launcherMessage {
+  order: 6;
+}
+
 .launcher-tips {
   margin-top: 10px;
   margin-bottom: 10px;
@@ -115,6 +157,22 @@ body {
 .field-hint {
   font-size: 0.88rem;
   color: #44657a;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: rgba(236, 253, 245, 0.9);
+  border: 1px solid rgba(15, 118, 110, 0.16);
+}
+
+.copy-toggle-row {
+  border: 1px dashed rgba(15, 118, 110, 0.3);
+  background: rgba(248, 250, 252, 0.88);
+  border-radius: 10px;
+  padding: 8px 10px;
+}
+
+.copy-toggle-row .form-check-label {
+  color: #0f3a53;
+  font-weight: 600;
 }
 
 .btn-ticket,
@@ -231,12 +289,44 @@ body {
   color: var(--text-sub);
 }
 
+.participant-pager {
+  margin-top: 12px;
+  padding: 10px;
+  border-radius: 12px;
+  border: 1px solid rgba(15, 118, 110, 0.22);
+  background: rgba(240, 253, 250, 0.72);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.participant-pager.hidden-ui {
+  display: none;
+}
+
+.participant-progress {
+  flex: 1;
+  text-align: center;
+  color: #0f3a53;
+  font-weight: 700;
+}
+
 .participant-card {
   margin-top: 14px;
   border: 1px solid rgba(15, 118, 110, 0.24);
   border-radius: 14px;
   background: rgba(255, 255, 255, 0.76);
   overflow: hidden;
+}
+
+.participant-card.hidden-card {
+  display: none;
+}
+
+.participant-card.active-card {
+  border-color: rgba(13, 148, 136, 0.55);
+  box-shadow: 0 8px 24px rgba(13, 148, 136, 0.14);
 }
 
 .participant-head {
@@ -357,7 +447,7 @@ button:focus,
 
   .page-wrap {
     width: calc(100% - 14px);
-    margin: 14px auto 20px;
+    margin: clamp(22px, 6vh, 40px) auto 20px;
   }
 
   .hero-card,
@@ -369,6 +459,21 @@ button:focus,
 
   .step-actions {
     grid-template-columns: 1fr;
+  }
+
+  .participant-pager {
+    gap: 6px;
+    padding: 8px;
+  }
+
+  .participant-pager .btn {
+    white-space: nowrap;
+    padding: 8px 10px;
+    min-height: 44px;
+  }
+
+  .participant-progress {
+    font-size: 0.92rem;
   }
 
   .step-actions .btn,
@@ -400,7 +505,7 @@ button:focus,
 }
 
 body.elder-mode {
-  font-size: 18px;
+  font-size: 21px;
 }
 
 body.elder-mode .main-title {
@@ -420,7 +525,17 @@ body.elder-mode .submit-message,
 body.elder-mode .confirm-amount,
 body.elder-mode .bank-list,
 body.elder-mode #summaryTable {
-  font-size: 1.08rem;
+  font-size: 1.24rem;
+}
+
+body.elder-mode input,
+body.elder-mode select,
+body.elder-mode button,
+body.elder-mode .btn,
+body.elder-mode .form-control,
+body.elder-mode .form-select {
+  font-size: 1.24rem !important;
+  min-height: 56px;
 }
 
 body.elder-mode input:not([type="checkbox"]):not([type="radio"]),

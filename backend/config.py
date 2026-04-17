@@ -3,9 +3,11 @@ import os
 from dataclasses import dataclass
 from typing import Dict, List, Tuple
 
-from logging_utils import log_event
+from .logging_utils import log_event
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.dirname(BASE_DIR)
+FRONTEND_DIR = os.path.join(PROJECT_ROOT, 'frontend')
 
 
 def load_env_file(env_path: str) -> None:
@@ -24,7 +26,7 @@ def load_env_file(env_path: str) -> None:
                 os.environ[key] = value
 
 
-load_env_file(os.path.join(BASE_DIR, '.env'))
+load_env_file(os.path.join(PROJECT_ROOT, '.env'))
 
 
 @dataclass(frozen=True)
@@ -75,7 +77,7 @@ def load_config() -> AppConfig:
     smtp_username = os.environ.get('SMTP_USERNAME', '').strip()
 
     return AppConfig(
-        google_credentials_path=os.environ.get('GOOGLE_CREDENTIALS_PATH', os.path.join(BASE_DIR, 'credentials.json')),
+        google_credentials_path=os.environ.get('GOOGLE_CREDENTIALS_PATH', os.path.join(PROJECT_ROOT, 'credentials.json')),
         google_sheet_name=os.environ.get('GOOGLE_SHEET_NAME', '主售票系統  2026 春映洄瀾，拾光'),
         num_cars=10,
         initial_seats_per_car=[100, 1000, 102, 100, 100, 0, 26, 50, 50, 50],
@@ -104,7 +106,7 @@ def load_config() -> AppConfig:
         push_telegram_bot_token=os.environ.get('PUSH_TELEGRAM_BOT_TOKEN', '').strip(),
         push_telegram_chat_id=os.environ.get('PUSH_TELEGRAM_CHAT_ID', '').strip(),
         push_line_notify_token=os.environ.get('PUSH_LINE_NOTIFY_TOKEN', '').strip(),
-        email_retry_queue_file=os.path.join(BASE_DIR, 'email_retry_queue.jsonl'),
+        email_retry_queue_file=os.environ.get('EMAIL_RETRY_QUEUE_FILE', os.path.join(PROJECT_ROOT, 'email_retry_queue.jsonl')),
         bank_info={
             '銀行': os.environ.get('BANK_NAME', '中國信託銀行822'),
             '帳號': os.environ.get('BANK_ACCOUNT', '7835-4029-2705'),

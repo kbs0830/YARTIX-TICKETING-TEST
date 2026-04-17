@@ -6,7 +6,7 @@ from typing import Dict, List, Tuple
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 
-from config import AppConfig
+from .config import AppConfig
 
 HEADER_ROW = [
     '姓名', '性別', '出生年月日', '身分證字號', '電話號碼', '電子郵件',

@@ -1,9 +1,19 @@
 (() => {
+  const BOOTSTRAP_CACHE_KEY = "yartix_bootstrap_cache_v1";
+  const BOOTSTRAP_CACHE_MAX_AGE_MS = 2 * 60 * 1000;
+  const BOOTSTRAP_REQUEST_TIMEOUT_MS = 6000;
+
   const state = {
     bootstrap: null,
     registrationEndDate: "2026-06-06",
     countdownTimer: null,
     elderMode: false,
+    currentCardIndex: 0,
+    cardCount: 0,
+    policyReadCompleted: false,
+    bootstrapReady: false,
+    bgPreloadStarted: false,
+    bootstrapFetchPromise: null,
   };
 
   const ui = {
@@ -16,8 +26,16 @@
     elderModeToggle: document.getElementById("elderModeToggle"),
     startBtn: document.getElementById("startBtn"),
     launcherMessage: document.getElementById("launcherMessage"),
+    agreeReadHint: document.getElementById("agreeReadHint"),
+    policyDrawer: document.getElementById("policyDrawer"),
+    policyContent: document.getElementById("policyContent"),
     formSection: document.getElementById("formSection"),
+    participantPager: document.getElementById("participantPager"),
+    prevParticipantBtn: document.getElementById("prevParticipantBtn"),
+    nextParticipantBtn: document.getElementById("nextParticipantBtn"),
+    participantProgress: document.getElementById("participantProgress"),
     participantsContainer: document.getElementById("participantsContainer"),
+    submitBar: document.querySelector(".submit-bar"),
     submitBtn: document.getElementById("submitBtn"),
     submitMessage: document.getElementById("submitMessage"),
     confirmSection: document.getElementById("confirmSection"),
@@ -40,32 +58,9 @@
     element.className = className;
   }
 
-  function setElderMode(enabled) {
-    state.elderMode = Boolean(enabled);
-    document.body.classList.toggle("elder-mode", state.elderMode);
-    window.localStorage.setItem("yartix_elder_mode", state.elderMode ? "1" : "0");
-    if (ui.elderModeToggle) {
-      ui.elderModeToggle.checked = state.elderMode;
-    }
-  }
-
-  function initElderMode() {
-    const saved = window.localStorage.getItem("yartix_elder_mode");
-    setElderMode(saved === "1");
-    if (ui.elderModeToggle) {
-      ui.elderModeToggle.addEventListener("change", (event) => {
-        setElderMode(event.target.checked);
-      });
-    }
-  }
-
-  async function loadBootstrap() {
-    const response = await fetch("/api/bootstrap", { method: "GET" });
-    const payload = await response.json().catch(() => ({}));
-    if (!response.ok) {
-      throw new Error(payload.message || "無法讀取活動資訊，請稍後再試。");
-    }
+  function applyBootstrapPayload(payload) {
     state.bootstrap = payload;
+    state.bootstrapReady = true;
     state.registrationEndDate = state.bootstrap.registration_end_date || "2026-06-06";
 
     const notices = [state.bootstrap.warning || ""]
@@ -79,7 +74,209 @@
       return;
     }
 
-    startCountdown();
+    ui.launcher.classList.remove("hidden-ui");
+  }
+
+  function saveBootstrapToLocalCache(payload) {
+    try {
+      window.localStorage.setItem(
+        BOOTSTRAP_CACHE_KEY,
+        JSON.stringify({
+          ts: Date.now(),
+          payload,
+        })
+      );
+    } catch (_error) {
+      // Ignore localStorage quota or privacy-mode errors.
+    }
+  }
+
+  function loadBootstrapFromLocalCache() {
+    try {
+      const raw = window.localStorage.getItem(BOOTSTRAP_CACHE_KEY);
+      if (!raw) {
+        return null;
+      }
+      const parsed = JSON.parse(raw);
+      if (!parsed || !parsed.payload || typeof parsed.ts !== "number") {
+        return null;
+      }
+      if (Date.now() - parsed.ts > BOOTSTRAP_CACHE_MAX_AGE_MS) {
+        return null;
+      }
+      return parsed.payload;
+    } catch (_error) {
+      return null;
+    }
+  }
+
+  function preloadHeroBackground() {
+    if (state.bgPreloadStarted) {
+      return;
+    }
+    state.bgPreloadStarted = true;
+
+    const img = new Image();
+    img.src = "/static/www.png";
+    img.onload = () => {
+      document.body.classList.add("bg-ready");
+    };
+  }
+
+  function scheduleDeferredBackgroundLoad() {
+    if (state.bgPreloadStarted) {
+      return;
+    }
+
+    if ("requestIdleCallback" in window) {
+      window.requestIdleCallback(() => preloadHeroBackground(), { timeout: 1500 });
+      return;
+    }
+
+    window.setTimeout(() => preloadHeroBackground(), 300);
+  }
+
+  function setAgreeEnabled(enabled, hintText) {
+    if (!ui.agree) {
+      return;
+    }
+    ui.agree.disabled = !enabled;
+    if (!enabled) {
+      ui.agree.checked = false;
+    }
+    if (ui.agreeReadHint && hintText) {
+      ui.agreeReadHint.textContent = hintText;
+    }
+  }
+
+  async function ensurePolicyLoaded() {
+    if (!ui.policyContent || ui.policyContent.dataset.loaded === "1") {
+      return;
+    }
+
+    try {
+      const response = await fetch("/static/content/policy.html?v=20260417-1");
+      const html = await response.text();
+      if (!response.ok) {
+        throw new Error("公告內容讀取失敗");
+      }
+      ui.policyContent.innerHTML = html;
+      ui.policyContent.dataset.loaded = "1";
+
+      const noScrollNeeded = ui.policyContent.scrollHeight <= ui.policyContent.clientHeight + 4;
+      if (noScrollNeeded) {
+        state.policyReadCompleted = true;
+        setAgreeEnabled(true, "已閱讀完成，可勾選同意後開始填寫。");
+      }
+    } catch (_error) {
+      ui.policyContent.innerHTML = "<p class=\"mb-0 text-danger\">公告內容暫時無法載入，請稍後重試。</p>";
+      ui.policyContent.dataset.loaded = "0";
+    }
+  }
+
+  function setupPolicyReadGate() {
+    if (!ui.policyDrawer || !ui.policyContent || !ui.agree) {
+      return;
+    }
+
+    setAgreeEnabled(false, "請先展開下方公告並捲動閱讀到底，才可勾選同意。");
+
+    ui.policyDrawer.addEventListener("toggle", async () => {
+      if (!ui.policyDrawer.open) {
+        return;
+      }
+      await ensurePolicyLoaded();
+    });
+
+    ui.policyContent.addEventListener("scroll", () => {
+      if (state.policyReadCompleted) {
+        return;
+      }
+
+      const threshold = 18;
+      const reachBottom = ui.policyContent.scrollTop + ui.policyContent.clientHeight >= ui.policyContent.scrollHeight - threshold;
+      if (reachBottom) {
+        state.policyReadCompleted = true;
+        setAgreeEnabled(true, "已閱讀完成，可勾選同意後開始填寫。");
+      }
+    });
+  }
+
+  function setElderMode(enabled) {
+    state.elderMode = Boolean(enabled);
+    document.body.classList.toggle("elder-mode", state.elderMode);
+    window.localStorage.setItem("yartix_elder_mode", state.elderMode ? "1" : "0");
+    if (ui.elderModeToggle) {
+      ui.elderModeToggle.checked = state.elderMode;
+    }
+  }
+
+  function initElderMode() {
+    setElderMode(false);
+    if (ui.elderModeToggle) {
+      ui.elderModeToggle.addEventListener("change", (event) => {
+        setElderMode(event.target.checked);
+      });
+    }
+  }
+
+  async function loadBootstrap(timeoutMs = BOOTSTRAP_REQUEST_TIMEOUT_MS) {
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const response = await fetch("/api/bootstrap", { method: "GET", signal: controller.signal });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(payload.message || "無法讀取活動資訊，請稍後再試。");
+      }
+
+      applyBootstrapPayload(payload);
+      saveBootstrapToLocalCache(payload);
+      return payload;
+    } catch (error) {
+      if (error && error.name === "AbortError") {
+        throw new Error("系統載入較慢，正在重試連線。");
+      }
+      throw error;
+    } finally {
+      window.clearTimeout(timer);
+    }
+  }
+
+  async function ensureBootstrapReady() {
+    if (state.bootstrapReady && state.bootstrap) {
+      return state.bootstrap;
+    }
+
+    if (!state.bootstrapFetchPromise) {
+      state.bootstrapFetchPromise = (async () => {
+        try {
+          return await loadBootstrap(BOOTSTRAP_REQUEST_TIMEOUT_MS);
+        } catch (firstError) {
+          if (String(firstError.message || "").includes("正在重試連線")) {
+            return loadBootstrap(12000);
+          }
+          throw firstError;
+        }
+      })().finally(() => {
+        state.bootstrapFetchPromise = null;
+      });
+    }
+
+    return state.bootstrapFetchPromise;
+  }
+
+  async function refreshBootstrapInBackground() {
+    try {
+      await ensureBootstrapReady();
+    } catch (error) {
+      const hasCache = Boolean(state.bootstrapReady && state.bootstrap);
+      if (hasCache) {
+        ui.globalNotice.textContent = "系統資料同步中，畫面將持續更新最新資訊。";
+        return;
+      }
+      ui.countdown.textContent = error.message || "系統連線較慢，請稍後。";
+    }
   }
 
   function startCountdown() {
@@ -103,7 +300,9 @@
       const mins = Math.floor((diff % 3600) / 60);
       const secs = diff % 60;
       ui.countdown.textContent = `活動還剩 ${days} 天 ${hours} 時 ${mins} 分 ${secs} 秒`;
-      ui.launcher.classList.remove("hidden-ui");
+      if (state.bootstrapReady) {
+        ui.launcher.classList.remove("hidden-ui");
+      }
     };
 
     tick();
@@ -147,6 +346,15 @@
     const foodOptions = buildFoodOptions(state.bootstrap.food_types || []);
     const addonInputs = buildAddonInputs(state.bootstrap.addons || {});
 
+    const sameAsPreviousControls = index > 0
+      ? `
+        <div class="copy-toggle-row mb-2">
+          <label class="form-check-label d-block"><input type="checkbox" class="form-check-input me-1 copy-from-prev-phone">電話同上一位</label>
+          <label class="form-check-label d-block"><input type="checkbox" class="form-check-input me-1 copy-from-prev-email">Email同上一位</label>
+        </div>
+      `
+      : "";
+
     return `
       <article class="participant-card" data-card-index="${index}" data-current-step="1">
         <div class="participant-head">
@@ -161,11 +369,11 @@
               <option value="男">男</option>
               <option value="女">女</option>
             </select>
-            <input type="date" class="form-control mb-1 field-dob" title="請選擇西元出生日期，例如 1990-05-20" required>
-            <p class="field-hint mb-2">出生日期提示：請使用西元年月日。</p>
+            <input type="date" class="form-control mb-2 field-dob" title="請選擇西元出生日期，例如 1990-05-20" required>
             <input type="text" class="form-control mb-2 field-id-number" placeholder="身分證" minlength="10" maxlength="10" pattern="[A-Za-z][12][0-9]{8}" title="請輸入正確身分證字號格式，例如 A123456789" required>
             <input type="tel" class="form-control mb-2 field-phone" placeholder="電話" inputmode="numeric" pattern="09[0-9]{8}" title="請輸入 09 開頭的 10 碼手機號碼" required>
             <input type="email" class="form-control field-email" placeholder="Email" maxlength="80" required>
+            ${sameAsPreviousControls}
             <div class="step-actions">
               <button type="button" class="btn btn-primary btn-next">下一步</button>
             </div>
@@ -199,6 +407,7 @@
 
             <div class="step-actions">
               <button type="button" class="btn btn-secondary btn-prev">上一步</button>
+              <button type="button" class="btn btn-outline-primary btn-next-person">儲存並下一位</button>
             </div>
           </div>
         </div>
@@ -222,6 +431,77 @@
       const isActive = toInt(panel.dataset.step, 1) === targetStep;
       panel.classList.toggle("active", isActive);
     });
+
+    updateSubmitBarVisibility();
+  }
+
+  function updateSubmitBarVisibility() {
+    if (!ui.submitBar) {
+      return;
+    }
+
+    const cards = Array.from(ui.participantsContainer.querySelectorAll(".participant-card"));
+    if (cards.length === 0) {
+      ui.submitBar.classList.add("hidden-ui");
+      return;
+    }
+
+    const allConfirmed = cards.every((card) => toInt(card.dataset.currentStep, 1) === 3);
+    ui.submitBar.classList.toggle("hidden-ui", !allConfirmed);
+  }
+
+  function updateParticipantPager() {
+    if (!ui.participantPager) {
+      return;
+    }
+
+    const isMulti = state.cardCount > 1;
+    ui.participantPager.classList.toggle("hidden-ui", !isMulti);
+    if (!isMulti) {
+      return;
+    }
+
+    if (ui.participantProgress) {
+      ui.participantProgress.textContent = `第 ${state.currentCardIndex + 1} 位，共 ${state.cardCount} 位`;
+    }
+
+    if (ui.prevParticipantBtn) {
+      ui.prevParticipantBtn.disabled = state.currentCardIndex <= 0;
+    }
+    if (ui.nextParticipantBtn) {
+      ui.nextParticipantBtn.disabled = state.currentCardIndex >= state.cardCount - 1;
+    }
+  }
+
+  function updateParticipantVisibility() {
+    const cards = ui.participantsContainer.querySelectorAll(".participant-card");
+    const isMulti = state.cardCount > 1;
+
+    cards.forEach((card, idx) => {
+      const isActive = idx === state.currentCardIndex;
+      card.classList.toggle("hidden-card", isMulti && !isActive);
+      card.classList.toggle("active-card", !isMulti || isActive);
+    });
+
+    updateParticipantPager();
+  }
+
+  function goToParticipant(index) {
+    const bounded = Math.max(0, Math.min(state.cardCount - 1, index));
+    state.currentCardIndex = bounded;
+    updateParticipantVisibility();
+  }
+
+  function moveToNextParticipantFromCard(card) {
+    const index = toInt(card.dataset.cardIndex, 0);
+    if (index < state.cardCount - 1) {
+      goToParticipant(index + 1);
+      const nextCard = ui.participantsContainer.querySelector(`.participant-card[data-card-index="${index + 1}"]`);
+      const firstField = nextCard?.querySelector(".field-name");
+      if (firstField) {
+        firstField.focus();
+      }
+    }
   }
 
   function renderConfirmPreview(card) {
@@ -310,6 +590,13 @@
 
   function bindCardEvents() {
     ui.participantsContainer.querySelectorAll(".participant-card").forEach((card) => {
+      const idField = card.querySelector(".field-id-number");
+      if (idField) {
+        idField.addEventListener("input", () => {
+          idField.value = idField.value.toUpperCase();
+        });
+      }
+
       card.querySelectorAll(".btn-next").forEach((btn) => {
         btn.addEventListener("click", () => {
           if (!validateCurrentStep(card)) {
@@ -326,17 +613,119 @@
           switchStep(card, current - 1);
         });
       });
+
+      card.querySelectorAll(".btn-next-person").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          if (!validateCurrentStep(card)) {
+            return;
+          }
+          moveToNextParticipantFromCard(card);
+        });
+      });
+    });
+
+    if (ui.prevParticipantBtn) {
+      ui.prevParticipantBtn.onclick = () => {
+        goToParticipant(state.currentCardIndex - 1);
+      };
+    }
+    if (ui.nextParticipantBtn) {
+      ui.nextParticipantBtn.onclick = () => {
+        goToParticipant(state.currentCardIndex + 1);
+      };
+    }
+  }
+
+  function bindCopyFromPrevious() {
+    const cards = Array.from(ui.participantsContainer.querySelectorAll(".participant-card"));
+    cards.forEach((card, idx) => {
+      if (idx === 0) {
+        return;
+      }
+
+      const prevCard = cards[idx - 1];
+      const prevPhone = prevCard.querySelector(".field-phone");
+      const prevEmail = prevCard.querySelector(".field-email");
+      const phoneField = card.querySelector(".field-phone");
+      const emailField = card.querySelector(".field-email");
+      const phoneToggle = card.querySelector(".copy-from-prev-phone");
+      const emailToggle = card.querySelector(".copy-from-prev-email");
+
+      if (phoneToggle && phoneField && prevPhone) {
+        const syncPhone = () => {
+          if (!phoneToggle.checked) {
+            return;
+          }
+          phoneField.value = prevPhone.value;
+        };
+
+        phoneToggle.addEventListener("change", () => {
+          phoneField.readOnly = phoneToggle.checked;
+          syncPhone();
+        });
+        prevPhone.addEventListener("input", syncPhone);
+      }
+
+      if (emailToggle && emailField && prevEmail) {
+        const syncEmail = () => {
+          if (!emailToggle.checked) {
+            return;
+          }
+          emailField.value = prevEmail.value;
+        };
+
+        emailToggle.addEventListener("change", () => {
+          emailField.readOnly = emailToggle.checked;
+          syncEmail();
+        });
+        prevEmail.addEventListener("input", syncEmail);
+      }
+    });
+  }
+
+  function applyDateFallbackHints() {
+    const probe = document.createElement("input");
+    probe.setAttribute("type", "date");
+    const unsupportedDateInput = probe.type !== "date";
+
+    ui.participantsContainer.querySelectorAll(".field-dob").forEach((dobField) => {
+      if (unsupportedDateInput) {
+        dobField.setAttribute("type", "text");
+        dobField.setAttribute("placeholder", "例如：1990-05-20");
+        dobField.setAttribute("pattern", "\\d{4}-\\d{2}-\\d{2}");
+        dobField.setAttribute("inputmode", "numeric");
+      }
+
+      const hint = dobField.parentElement?.querySelector(".field-hint");
+      if (hint) {
+        hint.textContent = unsupportedDateInput
+          ? "此裝置不支援日期選擇器，請輸入西元格式 YYYY-MM-DD，例如 1990-05-20。"
+          : "可點選日期欄位開啟日期選擇器；若未顯示，請輸入西元格式 YYYY-MM-DD。";
+      }
     });
   }
 
   function createParticipantCards(count) {
+    state.cardCount = count;
+    state.currentCardIndex = 0;
     ui.participantsContainer.innerHTML = "";
     const fragment = [];
     for (let i = 0; i < count; i += 1) {
       fragment.push(buildCard(i));
     }
     ui.participantsContainer.innerHTML = fragment.join("");
+
+    if (count <= 1) {
+      ui.participantsContainer.querySelectorAll(".btn-next-person").forEach((btn) => {
+        btn.classList.add("hidden-ui");
+      });
+    }
+
     bindCardEvents();
+    bindCopyFromPrevious();
+    applyDateFallbackHints();
+    updateParticipantVisibility();
+    updateSubmitBarVisibility();
   }
 
   function collectParticipants() {
@@ -354,7 +743,7 @@
         name: card.querySelector(".field-name").value.trim(),
         gender: card.querySelector(".field-gender").value,
         dob: card.querySelector(".field-dob").value,
-        id_number: card.querySelector(".field-id-number").value.trim(),
+        id_number: card.querySelector(".field-id-number").value.trim().toUpperCase(),
         phone: card.querySelector(".field-phone").value.trim(),
         email: card.querySelector(".field-email").value.trim(),
         ticket_type: card.querySelector(".field-ticket").value,
@@ -508,7 +897,26 @@
     }
   }
 
-  function onStartClick() {
+  async function onStartClick() {
+    if (!state.bootstrapReady || !state.bootstrap) {
+      setMessage(ui.launcherMessage, "系統資料同步中，稍候自動進入填寫頁...", "submit-message");
+      if (ui.startBtn) {
+        ui.startBtn.disabled = true;
+      }
+      try {
+        await ensureBootstrapReady();
+      } catch (error) {
+        setMessage(ui.launcherMessage, error.message || "系統資料同步失敗，請稍後再試。", "submit-message error");
+        if (ui.startBtn) {
+          ui.startBtn.disabled = false;
+        }
+        return;
+      }
+      if (ui.startBtn) {
+        ui.startBtn.disabled = false;
+      }
+    }
+
     const count = Math.min(10, Math.max(1, toInt(ui.countInput.value, 1)));
     if (!ui.agree.checked) {
       setMessage(ui.launcherMessage, "請先勾選同意活動規範與退費條款。", "submit-message error");
@@ -516,6 +924,7 @@
     }
 
     setMessage(ui.launcherMessage, "", "submit-message");
+    scheduleDeferredBackgroundLoad();
     createParticipantCards(count);
     if (ui.heroSection) {
       ui.heroSection.classList.add("hidden-ui");
@@ -526,18 +935,29 @@
     if (ui.confirmSection) {
       ui.confirmSection.classList.add("hidden-ui");
     }
+    if (ui.submitBar) {
+      ui.submitBar.classList.add("hidden-ui");
+    }
     setMessage(ui.submitMessage, "", "submit-message");
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   async function init() {
     try {
+      setupPolicyReadGate();
       initElderMode();
-      await loadBootstrap();
+      startCountdown();
+
+      const cachedBootstrap = loadBootstrapFromLocalCache();
+      if (cachedBootstrap) {
+        applyBootstrapPayload(cachedBootstrap);
+      }
+
       ui.startBtn.addEventListener("click", onStartClick);
       ui.submitBtn.addEventListener("click", submitRegistration);
+      refreshBootstrapInBackground();
     } catch (error) {
-      ui.countdown.textContent = error.message;
+      ui.globalNotice.textContent = error.message || "系統載入較慢，請稍後再試。";
     }
   }
 

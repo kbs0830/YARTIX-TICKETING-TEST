@@ -1,7 +1,7 @@
 import os
 from typing import Optional
 
-from logging_utils import log_event
+from .logging_utils import log_event
 
 _LOCK_FILE = '.app.pid'
 
@@ -23,7 +23,7 @@ def ensure_single_instance(base_dir: str) -> Optional[str]:
             with open(lock_path, 'r', encoding='utf-8') as f:
                 old_pid = int((f.read() or '0').strip())
             if old_pid > 0 and old_pid != pid and _pid_exists(old_pid):
-                return f'偵測到另一個 app.py 已在執行（PID: {old_pid}），請先停止舊進程。'
+                return f'偵測到另一個服務進程已在執行（PID: {old_pid}），請先停止舊進程。'
         except Exception:
             pass
 

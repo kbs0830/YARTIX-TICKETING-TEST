@@ -3,9 +3,9 @@ from datetime import datetime
 from threading import Lock
 from typing import List, Tuple
 
-from config import AppConfig
-from models import Participant, RegistrationRow
-from sheet_service import SheetService
+from .config import AppConfig
+from .models import Participant, RegistrationRow
+from .sheet_service import SheetService
 
 _build_lock = Lock()
 

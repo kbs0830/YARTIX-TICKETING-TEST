@@ -1,49 +1,79 @@
-# Yartix-main
+# Yartix 主專案說明
 
-## 本機啟動
-1. 建立 Python 3.11 環境並安裝依賴：
-   ```bash
-   pip install -r requirements.txt
-   ```
-2. 複製環境變數範本：
-   ```bash
-   copy .env.example .env
-   ```
-3. 填入 `.env` 的 SMTP 與 Google Sheet 設定。
-4. 啟動：
-   ```bash
-   python app.py
-   ```
+本專案已完成整理為前後端分離結構，並清除測試與非正式執行檔案，保留正式網站運作所需內容。
 
-## 唯一啟動守則（避免多進程讀到舊設定）
-- 請只啟動一個 `python app.py`。
-- 程式啟動時會寫入 `.app.pid`，若偵測到舊進程仍在執行，會直接拒絕啟動。
+## 目錄結構
 
-## .env 與敏感資料
-- `.env` 僅限本機使用，不可加入版控。
-- `credentials.json` 僅限本機，Render 建議使用 `GOOGLE_CREDENTIALS_JSON`。
-- SMTP App Password 請使用 Gmail 16 碼密碼，且上線前先重新產生（rotate）。
-
-## 重送機制
-- 當付款 Email 寄送失敗，會寫入 `email_retry_queue.jsonl`。
-- 呼叫 API 重送：
-  ```bash
-  curl -X POST http://127.0.0.1:8080/api/retry-email-queue
-  ```
-
-## API Smoke Tests
-- 健康檢查與報名：
-  ```bash
-  python test_registration_bot.py --base-url http://127.0.0.1:8080 --rounds 1 --min-participants 1 --max-participants 1
-  ```
-
-## 單元測試
-```bash
-pytest -q
+```text
+Yartix-main/
+├─ backend/                 # 後端 Flask 與商業邏輯
+│  ├─ app.py                # Flask API/路由入口（WSGI: backend.app:app）
+│  ├─ config.py             # 設定載入與驗證
+│  ├─ registration_service.py
+│  ├─ sheet_service.py
+│  ├─ email_service.py
+│  ├─ models.py
+│  ├─ errors.py
+│  ├─ logging_utils.py
+│  └─ startup_guard.py
+├─ frontend/
+│  ├─ templates/
+│  │  └─ index.html         # 前端頁面模板
+│  └─ static/               # CSS/JS/圖片/公告內容
+├─ run.py                   # 本機啟動入口
+├─ MAIN.md                  # 快速入口文件
+├─ Procfile                 # 平台啟動設定（Gunicorn）
+├─ render.yaml              # Render 部署設定
+├─ requirements.txt
+├─ .env.example
+└─ README.md
 ```
 
-## 常見錯誤排除
-- `E_SMTP_CONFIG`：SMTP 參數缺漏、仍是範例密碼，或密碼含非 ASCII。
-- `E_SHEET_UNAVAILABLE`：Google Sheet 憑證或連線異常。
-- `E_SHEET_WRITE`：Sheet 寫入失敗（權限/欄位異常）。
-- `E_VALIDATION`：使用者輸入格式不符合規則。
+## 本機啟動（不使用虛擬環境）
+
+1. 安裝依賴
+
+```bash
+pip install -r requirements.txt
+```
+
+2. 建立環境變數檔
+
+```bash
+copy .env.example .env
+```
+
+3. 編輯 `.env`，填入 SMTP 與 Google Sheet 參數。
+
+4. 啟動服務
+
+```bash
+python run.py
+```
+
+5. 開啟 `http://127.0.0.1:8080`
+
+## 部署與標準規範
+
+- WSGI 啟動點：`backend.app:app`
+- Render 啟動命令：`gunicorn backend.app:app`
+- 前後端分離：後端位於 `backend/`，前端資源位於 `frontend/`
+- 設定與敏感資訊：`.env`、`credentials.json` 不進版控
+
+## API
+
+- `GET /api/bootstrap`：載入活動設定與剩餘資訊
+- `POST /api/register`：送出報名
+- `POST /api/retry-email-queue`：重送失敗付款信
+
+## 錯誤碼
+
+- `E_INVALID_PAYLOAD`
+- `E_VALIDATION`
+- `E_SHEET_UNAVAILABLE`
+- `E_SHEET_WRITE`
+- `E_SHEET_SCHEMA`
+- `E_SMTP_CONFIG`
+- `E_SMTP_SEND`
+- `E_PUSH_CONFIG`
+- `E_PUSH_SEND`

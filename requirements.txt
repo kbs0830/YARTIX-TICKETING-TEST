@@ -4,4 +4,3 @@ openpyxl
 gspread
 oauth2client
 gunicorn
-pytest
