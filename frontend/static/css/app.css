@@ -297,7 +297,8 @@ body.bg-ready {
   background: rgba(240, 253, 250, 0.72);
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
+  flex-wrap: wrap;
   gap: 8px;
 }
 
@@ -306,10 +307,21 @@ body.bg-ready {
 }
 
 .participant-progress {
-  flex: 1;
-  text-align: center;
+  margin-right: auto;
+  text-align: left;
   color: #0f3a53;
   font-weight: 700;
+}
+
+.participant-switch-label {
+  color: #0f3a53;
+  font-weight: 700;
+  margin: 0;
+}
+
+.participant-switch {
+  width: auto;
+  min-width: 170px;
 }
 
 .participant-card {
@@ -390,6 +402,12 @@ body.bg-ready {
   margin-top: 16px;
 }
 
+.multi-total-amount {
+  margin: 0 0 8px;
+  font-weight: 800;
+  color: #0d4edd;
+}
+
 .confirm-amount {
   font-size: 1.03rem;
 }
@@ -466,14 +484,16 @@ button:focus,
     padding: 8px;
   }
 
-  .participant-pager .btn {
-    white-space: nowrap;
-    padding: 8px 10px;
+  .participant-switch {
+    width: 100%;
+    min-width: 0;
     min-height: 44px;
   }
 
   .participant-progress {
     font-size: 0.92rem;
+    margin-right: 0;
+    width: 100%;
   }
 
   .step-actions .btn,

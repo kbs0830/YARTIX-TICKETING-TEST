@@ -6,7 +6,7 @@
 <title>Yang Art Ticket 青年藝文售票</title>
 
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-<link rel="stylesheet" href="/static/css/app.css?v=20260417-10">
+<link rel="stylesheet" href="/static/css/app.css?v=20260417-11">
 </head>
 <body>
 
@@ -51,14 +51,15 @@
     </div>
 
     <div id="participantPager" class="participant-pager hidden-ui" aria-live="polite">
-      <button id="prevParticipantBtn" type="button" class="btn btn-secondary">上一位</button>
       <p id="participantProgress" class="participant-progress mb-0">第 1 位，共 1 位</p>
-      <button id="nextParticipantBtn" type="button" class="btn btn-primary">下一位</button>
+      <label for="participantSelect" class="participant-switch-label">切換參加者</label>
+      <select id="participantSelect" class="form-select participant-switch" aria-label="切換參加者"></select>
     </div>
 
     <div id="participantsContainer"></div>
 
     <div class="submit-bar hidden-ui">
+      <p id="multiTotalAmount" class="multi-total-amount hidden-ui" aria-live="polite"></p>
       <button id="submitBtn" class="btn btn-submit w-100">送出報名</button>
       <p id="submitMessage" class="submit-message"></p>
     </div>
@@ -88,6 +89,6 @@
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script src="/static/js/app.js?v=20260417-9"></script>
+<script src="/static/js/app.js?v=20260417-10"></script>
 </body>
 </html>

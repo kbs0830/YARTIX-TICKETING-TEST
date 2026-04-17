@@ -31,11 +31,11 @@
     policyContent: document.getElementById("policyContent"),
     formSection: document.getElementById("formSection"),
     participantPager: document.getElementById("participantPager"),
-    prevParticipantBtn: document.getElementById("prevParticipantBtn"),
-    nextParticipantBtn: document.getElementById("nextParticipantBtn"),
+    participantSelect: document.getElementById("participantSelect"),
     participantProgress: document.getElementById("participantProgress"),
     participantsContainer: document.getElementById("participantsContainer"),
     submitBar: document.querySelector(".submit-bar"),
+    multiTotalAmount: document.getElementById("multiTotalAmount"),
     submitBtn: document.getElementById("submitBtn"),
     submitMessage: document.getElementById("submitMessage"),
     confirmSection: document.getElementById("confirmSection"),
@@ -435,6 +435,45 @@
     updateSubmitBarVisibility();
   }
 
+  function calculateCardTotal(card) {
+    const ticket = card.querySelector(".field-ticket")?.value || "";
+    const ticketPrice = toInt((state.bootstrap.ticket_types || {})[ticket], 0);
+
+    let addonTotal = 0;
+    card.querySelectorAll(".addon-input").forEach((addonInput) => {
+      const key = addonInput.dataset.addonKey;
+      const qty = toInt(addonInput.value, 0);
+      if (qty <= 0) {
+        return;
+      }
+      const cfg = (state.bootstrap.addons || {})[key];
+      if (!cfg) {
+        return;
+      }
+      addonTotal += qty * toInt(cfg.price, 0);
+    });
+
+    return ticketPrice + addonTotal;
+  }
+
+  function updateMultiTotalAmountHint() {
+    if (!ui.multiTotalAmount) {
+      return;
+    }
+
+    const cards = Array.from(ui.participantsContainer.querySelectorAll(".participant-card"));
+    const shouldShow = state.cardCount >= 2 && cards.length > 0;
+    if (!shouldShow) {
+      ui.multiTotalAmount.classList.add("hidden-ui");
+      ui.multiTotalAmount.textContent = "";
+      return;
+    }
+
+    const totalAmount = cards.reduce((sum, card) => sum + calculateCardTotal(card), 0);
+    ui.multiTotalAmount.textContent = `全部人的金額：NT$ ${totalAmount}`;
+    ui.multiTotalAmount.classList.remove("hidden-ui");
+  }
+
   function updateSubmitBarVisibility() {
     if (!ui.submitBar) {
       return;
@@ -448,6 +487,7 @@
 
     const allConfirmed = cards.every((card) => toInt(card.dataset.currentStep, 1) === 3);
     ui.submitBar.classList.toggle("hidden-ui", !allConfirmed);
+    updateMultiTotalAmountHint();
   }
 
   function updateParticipantPager() {
@@ -465,11 +505,14 @@
       ui.participantProgress.textContent = `第 ${state.currentCardIndex + 1} 位，共 ${state.cardCount} 位`;
     }
 
-    if (ui.prevParticipantBtn) {
-      ui.prevParticipantBtn.disabled = state.currentCardIndex <= 0;
-    }
-    if (ui.nextParticipantBtn) {
-      ui.nextParticipantBtn.disabled = state.currentCardIndex >= state.cardCount - 1;
+    if (ui.participantSelect) {
+      if (ui.participantSelect.options.length !== state.cardCount) {
+        ui.participantSelect.innerHTML = Array.from({ length: state.cardCount }, (_, index) => {
+          const participantNo = index + 1;
+          return `<option value="${index}">第 ${participantNo} 位參加者</option>`;
+        }).join("");
+      }
+      ui.participantSelect.value = String(state.currentCardIndex);
     }
   }
 
@@ -534,8 +577,7 @@
     const email = card.querySelector(".field-email")?.value.trim() || "";
     const ticket = card.querySelector(".field-ticket")?.value || "";
     const food = card.querySelector(".field-food")?.value || "";
-    const ticketPrice = toInt((state.bootstrap.ticket_types || {})[ticket], 0);
-    const personTotal = ticketPrice + addonTotal;
+    const personTotal = calculateCardTotal(card);
 
     preview.innerHTML = [
       `<p class="mb-1">姓名：${escapeHtml(name)}</p>`,
@@ -552,6 +594,8 @@
     if (amountNode) {
       amountNode.textContent = `本位參加者金額：NT$ ${personTotal}`;
     }
+
+    updateMultiTotalAmountHint();
   }
 
   function validateCurrentStep(card) {
@@ -622,16 +666,18 @@
           moveToNextParticipantFromCard(card);
         });
       });
+
+      card.querySelectorAll(".field-ticket, .addon-input").forEach((field) => {
+        field.addEventListener("change", () => {
+          renderConfirmPreview(card);
+        });
+      });
     });
 
-    if (ui.prevParticipantBtn) {
-      ui.prevParticipantBtn.onclick = () => {
-        goToParticipant(state.currentCardIndex - 1);
-      };
-    }
-    if (ui.nextParticipantBtn) {
-      ui.nextParticipantBtn.onclick = () => {
-        goToParticipant(state.currentCardIndex + 1);
+    if (ui.participantSelect) {
+      ui.participantSelect.onchange = (event) => {
+        const selectedIndex = toInt(event.target.value, 0);
+        goToParticipant(selectedIndex);
       };
     }
   }
@@ -715,17 +761,20 @@
     }
     ui.participantsContainer.innerHTML = fragment.join("");
 
-    if (count <= 1) {
-      ui.participantsContainer.querySelectorAll(".btn-next-person").forEach((btn) => {
-        btn.classList.add("hidden-ui");
-      });
-    }
+    ui.participantsContainer.querySelectorAll(".participant-card").forEach((card, index) => {
+      if (count <= 1 || index === count - 1) {
+        card.querySelectorAll(".btn-next-person").forEach((btn) => {
+          btn.classList.add("hidden-ui");
+        });
+      }
+    });
 
     bindCardEvents();
     bindCopyFromPrevious();
     applyDateFallbackHints();
     updateParticipantVisibility();
     updateSubmitBarVisibility();
+    updateMultiTotalAmountHint();
   }
 
   function collectParticipants() {
