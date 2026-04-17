@@ -18,3 +18,27 @@ services:
         sync: false
       - key: GOOGLE_CREDENTIALS_JSON
         sync: false
+      - key: SMTP_HOST
+        value: smtp.gmail.com
+      - key: SMTP_PORT
+        value: "587"
+      - key: SMTP_USERNAME
+        sync: false
+      - key: SMTP_APP_PASSWORD
+        sync: false
+      - key: SMTP_FROM
+        sync: false
+      - key: PAYMENT_DEADLINE_TEXT
+        value: 請於 3 日內完成匯款
+      - key: PUSH_ENABLED
+        value: "false"
+      - key: PUSH_PROVIDER
+        value: telegram
+      - key: PUSH_TARGET_EMAIL
+        sync: false
+      - key: PUSH_TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: PUSH_TELEGRAM_CHAT_ID
+        sync: false
+      - key: PUSH_LINE_NOTIFY_TOKEN
+        sync: false

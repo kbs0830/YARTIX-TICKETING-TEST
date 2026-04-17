@@ -3,6 +3,7 @@
     bootstrap: null,
     registrationEndDate: "2026-06-06",
     countdownTimer: null,
+    elderMode: false,
   };
 
   const ui = {
@@ -12,6 +13,7 @@
     launcher: document.getElementById("launcher"),
     countInput: document.getElementById("countInput"),
     agree: document.getElementById("agree"),
+    elderModeToggle: document.getElementById("elderModeToggle"),
     startBtn: document.getElementById("startBtn"),
     launcherMessage: document.getElementById("launcherMessage"),
     formSection: document.getElementById("formSection"),
@@ -38,6 +40,25 @@
     element.className = className;
   }
 
+  function setElderMode(enabled) {
+    state.elderMode = Boolean(enabled);
+    document.body.classList.toggle("elder-mode", state.elderMode);
+    window.localStorage.setItem("yartix_elder_mode", state.elderMode ? "1" : "0");
+    if (ui.elderModeToggle) {
+      ui.elderModeToggle.checked = state.elderMode;
+    }
+  }
+
+  function initElderMode() {
+    const saved = window.localStorage.getItem("yartix_elder_mode");
+    setElderMode(saved === "1");
+    if (ui.elderModeToggle) {
+      ui.elderModeToggle.addEventListener("change", (event) => {
+        setElderMode(event.target.checked);
+      });
+    }
+  }
+
   async function loadBootstrap() {
     const response = await fetch("/api/bootstrap", { method: "GET" });
     const payload = await response.json().catch(() => ({}));
@@ -47,7 +68,7 @@
     state.bootstrap = payload;
     state.registrationEndDate = state.bootstrap.registration_end_date || "2026-06-06";
 
-    const notices = [state.bootstrap.notice || "", state.bootstrap.warning || ""]
+    const notices = [state.bootstrap.warning || ""]
       .filter(Boolean)
       .join(" ");
     ui.globalNotice.textContent = notices;
@@ -81,7 +102,7 @@
       const hours = Math.floor((diff % 86400) / 3600);
       const mins = Math.floor((diff % 3600) / 60);
       const secs = diff % 60;
-      ui.countdown.textContent = `距離 ${state.registrationEndDate} 截止還有 ${days} 天 ${hours} 小時 ${mins} 分 ${secs} 秒`;
+      ui.countdown.textContent = `活動還剩 ${days} 天 ${hours} 時 ${mins} 分 ${secs} 秒`;
       ui.launcher.classList.remove("hidden-ui");
     };
 
@@ -140,7 +161,8 @@
               <option value="男">男</option>
               <option value="女">女</option>
             </select>
-            <input type="date" class="form-control mb-2 field-dob" required>
+            <input type="date" class="form-control mb-1 field-dob" title="請選擇西元出生日期，例如 1990-05-20" required>
+            <p class="field-hint mb-2">出生日期提示：請使用西元年月日。</p>
             <input type="text" class="form-control mb-2 field-id-number" placeholder="身分證" minlength="10" maxlength="10" pattern="[A-Za-z][12][0-9]{8}" title="請輸入正確身分證字號格式，例如 A123456789" required>
             <input type="tel" class="form-control mb-2 field-phone" placeholder="電話" inputmode="numeric" pattern="09[0-9]{8}" title="請輸入 09 開頭的 10 碼手機號碼" required>
             <input type="email" class="form-control field-email" placeholder="Email" maxlength="80" required>
@@ -169,15 +191,11 @@
           </div>
 
           <div class="step-panel" data-step="3">
-            <div class="alert alert-success">
-              ${escapeHtml(state.bootstrap.bank_info["銀行"])}<br>
-              戶名：${escapeHtml(state.bootstrap.bank_info["戶名"])}<br>
-              帳號：${escapeHtml(state.bootstrap.bank_info["帳號"])}
+            <div class="alert alert-info">
+              第三步為資料確認，確認無誤後可直接送出。
             </div>
-
-            <input type="text" class="form-control mb-2 field-bank" placeholder="匯款銀行" minlength="2" maxlength="40" required>
-            <input type="text" class="form-control mb-2 field-bank-last4" placeholder="末四碼" inputmode="numeric" pattern="[0-9]{4}" title="請輸入 4 碼數字" required>
-            <input type="text" class="form-control field-note" placeholder="備註（選填）" maxlength="100">
+            <div class="confirm-preview"></div>
+            <div class="confirm-amount fw-bold text-primary mt-2"></div>
 
             <div class="step-actions">
               <button type="button" class="btn btn-secondary btn-prev">上一步</button>
@@ -190,6 +208,9 @@
 
   function switchStep(card, nextStep) {
     const targetStep = Math.max(1, Math.min(3, nextStep));
+    if (targetStep === 3) {
+      renderConfirmPreview(card);
+    }
     card.dataset.currentStep = String(targetStep);
 
     const pill = card.querySelector(".step-pill");
@@ -201,6 +222,56 @@
       const isActive = toInt(panel.dataset.step, 1) === targetStep;
       panel.classList.toggle("active", isActive);
     });
+  }
+
+  function renderConfirmPreview(card) {
+    const preview = card.querySelector(".confirm-preview");
+    const amountNode = card.querySelector(".confirm-amount");
+    if (!preview) {
+      return;
+    }
+
+    const addonLines = [];
+    let addonTotal = 0;
+    card.querySelectorAll(".addon-input").forEach((addonInput) => {
+      const key = addonInput.dataset.addonKey;
+      const qty = toInt(addonInput.value, 0);
+      if (qty > 0) {
+        const cfg = (state.bootstrap.addons || {})[key];
+        if (cfg) {
+          const lineAmount = qty * toInt(cfg.price, 0);
+          addonTotal += lineAmount;
+          addonLines.push(`${escapeHtml(cfg.label)} x ${qty}（NT$ ${lineAmount}）`);
+        }
+      }
+    });
+
+    const name = card.querySelector(".field-name")?.value.trim() || "";
+    const gender = card.querySelector(".field-gender")?.value || "";
+    const dob = card.querySelector(".field-dob")?.value || "";
+    const idNumber = card.querySelector(".field-id-number")?.value.trim() || "";
+    const phone = card.querySelector(".field-phone")?.value.trim() || "";
+    const email = card.querySelector(".field-email")?.value.trim() || "";
+    const ticket = card.querySelector(".field-ticket")?.value || "";
+    const food = card.querySelector(".field-food")?.value || "";
+    const ticketPrice = toInt((state.bootstrap.ticket_types || {})[ticket], 0);
+    const personTotal = ticketPrice + addonTotal;
+
+    preview.innerHTML = [
+      `<p class="mb-1">姓名：${escapeHtml(name)}</p>`,
+      `<p class="mb-1">性別：${escapeHtml(gender)}</p>`,
+      `<p class="mb-1">出生年月日：${escapeHtml(dob)}</p>`,
+      `<p class="mb-1">身分證字號：${escapeHtml(idNumber)}</p>`,
+      `<p class="mb-1">電話：${escapeHtml(phone)}</p>`,
+      `<p class="mb-1">Email：${escapeHtml(email)}</p>`,
+      `<p class="mb-1">票種：${escapeHtml(ticket)}</p>`,
+      `<p class="mb-1">飲食：${escapeHtml(food)}</p>`,
+      `<p class="mb-0">加購：${addonLines.length ? addonLines.join("、") : "無"}</p>`,
+    ].join("");
+
+    if (amountNode) {
+      amountNode.textContent = `本位參加者金額：NT$ ${personTotal}`;
+    }
   }
 
   function validateCurrentStep(card) {
@@ -231,14 +302,6 @@
       phoneField.setCustomValidity("請輸入 09 開頭的 10 碼手機號碼");
       phoneField.reportValidity();
       phoneField.setCustomValidity("");
-      return false;
-    }
-
-    const bankLast4Field = card.querySelector(".field-bank-last4");
-    if (bankLast4Field && bankLast4Field.value && !/^[0-9]{4}$/.test(bankLast4Field.value.trim())) {
-      bankLast4Field.setCustomValidity("請輸入 4 碼數字");
-      bankLast4Field.reportValidity();
-      bankLast4Field.setCustomValidity("");
       return false;
     }
 
@@ -296,9 +359,9 @@
         email: card.querySelector(".field-email").value.trim(),
         ticket_type: card.querySelector(".field-ticket").value,
         food_types: card.querySelector(".field-food").value,
-        bank_name: card.querySelector(".field-bank").value.trim(),
-        bank_last4: card.querySelector(".field-bank-last4").value.trim(),
-        note: card.querySelector(".field-note").value.trim(),
+        bank_name: "",
+        bank_last4: "",
+        note: "",
         addons,
       };
 
@@ -322,7 +385,6 @@
       const validators = [
         [".field-id-number", /^[A-Za-z][12][0-9]{8}$/, "請輸入正確身分證字號格式"],
         [".field-phone", /^09[0-9]{8}$/, "請輸入 09 開頭的 10 碼手機號碼"],
-        [".field-bank-last4", /^[0-9]{4}$/, "請輸入 4 碼數字"],
       ];
 
       for (const [selector, pattern, message] of validators) {
@@ -359,8 +421,24 @@
     return "";
   }
 
+  function getEasycardDetail(person) {
+    const easycardPrice = toInt(((state.bootstrap || {}).addons || {}).easycard?.price, 0);
+    const qty = toInt(
+      person["加購_easycard"]
+      ?? person.easycard_qty
+      ?? person.addon_easycard
+      ?? 0,
+      0
+    );
+    if (qty <= 0) {
+      return "無";
+    }
+    return `有（${qty} 張 / NT$ ${qty * easycardPrice}）`;
+  }
+
   function renderConfirm(result) {
-    ui.confirmCount.textContent = `本次報名 ${result.data.length} 位參加者，總金額 NT$ ${result.total_amount}`;
+    const emailStatusText = result.email_sent ? "付款資訊 Email 已寄出" : "付款資訊 Email 寄送失敗（可由後台重送）";
+    ui.confirmCount.textContent = `本次報名 ${result.data.length} 位參加者，總金額 NT$ ${result.total_amount}。${emailStatusText}`;
 
     ui.bankInfoList.innerHTML = [
       `<li>銀行：${escapeHtml(result.bank_info["銀行"])}</li>`,
@@ -377,7 +455,8 @@
         <td>${escapeHtml(person["姓名"])}</td>
         <td>${escapeHtml(person["票種"])}</td>
         <td>${escapeHtml(person["金額"])}</td>
-        <td>${escapeHtml(person["匯款末四碼"])}</td>
+        <td>${escapeHtml(getEasycardDetail(person))}</td>
+        <td>${escapeHtml(person["電子郵件"])}</td>
         <td>${escapeHtml(serialText)}</td>
       </tr>
     `;
@@ -453,6 +532,7 @@
 
   async function init() {
     try {
+      initElderMode();
       await loadBootstrap();
       ui.startBtn.addEventListener("click", onStartClick);
       ui.submitBtn.addEventListener("click", submitRegistration);

@@ -10,6 +10,7 @@
   --danger: #c0392b;
   --ok: #176038;
   --radius: 18px;
+  --focus-ring: 0 0 0 0.24rem rgba(20, 184, 166, 0.28);
 }
 
 * {
@@ -25,6 +26,7 @@ body {
     linear-gradient(rgba(7, 18, 28, 0.45), rgba(7, 18, 28, 0.58)),
     url('/static/www.png') center center / cover no-repeat fixed;
   background-attachment: fixed;
+  line-height: 1.5;
 }
 
 .page-wrap {
@@ -90,6 +92,31 @@ body {
   margin-top: 14px;
 }
 
+.launcher-tips {
+  margin-top: 10px;
+  margin-bottom: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(13, 148, 136, 0.2);
+  background: rgba(240, 253, 250, 0.84);
+}
+
+.launcher-tips ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.launcher-tips li {
+  color: #0f3a53;
+  font-size: 0.93rem;
+  margin: 4px 0;
+}
+
+.field-hint {
+  font-size: 0.88rem;
+  color: #44657a;
+}
+
 .btn-ticket,
 .btn-submit,
 .btn-line {
@@ -97,6 +124,83 @@ body {
   border-radius: 12px;
   padding: 12px 16px;
   font-weight: 700;
+  min-height: 46px;
+}
+
+.accessibility-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(15, 118, 110, 0.08);
+  border: 1px solid rgba(15, 118, 110, 0.18);
+}
+
+.accessibility-toggle .form-check-input {
+  margin-top: 0;
+  width: 1.2rem;
+  height: 1.2rem;
+}
+
+.accessibility-toggle .form-check-label {
+  color: #0b3a53;
+  font-weight: 600;
+}
+
+.policy-drawer {
+  margin-top: 10px;
+  border-radius: 12px;
+  border: 1px solid rgba(13, 148, 136, 0.28);
+  background: rgba(248, 250, 252, 0.9);
+  overflow: hidden;
+}
+
+.policy-drawer > summary {
+  cursor: pointer;
+  list-style: none;
+  padding: 12px;
+  font-weight: 700;
+  color: #0f3d58;
+  background: rgba(236, 253, 245, 0.9);
+}
+
+.policy-drawer > summary::-webkit-details-marker {
+  display: none;
+}
+
+.policy-drawer > summary::after {
+  content: "展開";
+  float: right;
+  font-size: 0.85rem;
+  color: #155e75;
+}
+
+.policy-drawer[open] > summary::after {
+  content: "收合";
+}
+
+.policy-content {
+  padding: 12px;
+  max-height: 320px;
+  overflow: auto;
+}
+
+.policy-content h3 {
+  font-size: 1rem;
+  margin: 12px 0 6px;
+  color: #103b54;
+}
+
+.policy-content p,
+.policy-content li {
+  font-size: 0.92rem;
+  color: #334e62;
+}
+
+.policy-content ul {
+  padding-left: 20px;
+  margin-bottom: 8px;
 }
 
 .btn-ticket,
@@ -196,6 +300,10 @@ body {
   margin-top: 16px;
 }
 
+.confirm-amount {
+  font-size: 1.03rem;
+}
+
 .submit-message {
   min-height: 22px;
   margin: 10px 0 0;
@@ -231,6 +339,17 @@ button {
   font-size: 16px !important;
 }
 
+input:focus,
+select:focus,
+button:focus,
+.btn:focus {
+  box-shadow: var(--focus-ring) !important;
+}
+
+#summaryTable {
+  font-size: 0.95rem;
+}
+
 @media (max-width: 768px) {
   body {
     background-attachment: scroll;
@@ -252,9 +371,91 @@ button {
     grid-template-columns: 1fr;
   }
 
+  .step-actions .btn,
+  .btn-ticket,
+  .btn-submit,
+  .btn-line {
+    min-height: 50px;
+  }
+
   .participant-head {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .submit-bar {
+    position: sticky;
+    bottom: 8px;
+    z-index: 20;
+    background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(6px);
+    border: 1px solid rgba(15, 118, 110, 0.14);
+    border-radius: 12px;
+    padding: 10px;
+  }
+
+  #summaryTable {
+    font-size: 0.88rem;
+  }
+}
+
+body.elder-mode {
+  font-size: 18px;
+}
+
+body.elder-mode .main-title {
+  font-size: clamp(2rem, 6vw, 2.8rem);
+}
+
+body.elder-mode .sub-title,
+body.elder-mode .global-notice,
+body.elder-mode .launcher-tips li,
+body.elder-mode .field-hint,
+body.elder-mode .policy-content p,
+body.elder-mode .policy-content li,
+body.elder-mode .section-head p,
+body.elder-mode .form-label,
+body.elder-mode .form-check-label,
+body.elder-mode .submit-message,
+body.elder-mode .confirm-amount,
+body.elder-mode .bank-list,
+body.elder-mode #summaryTable {
+  font-size: 1.08rem;
+}
+
+body.elder-mode input:not([type="checkbox"]):not([type="radio"]),
+body.elder-mode select,
+body.elder-mode button,
+body.elder-mode .btn {
+  font-size: 1.08rem !important;
+  min-height: 54px;
+}
+
+body.elder-mode .accessibility-toggle .form-check-input,
+body.elder-mode .form-check-input {
+  min-height: 1.2rem;
+  width: 1.2rem;
+  height: 1.2rem;
+}
+
+body.elder-mode .participant-head h3 {
+  font-size: 1.16rem;
+}
+
+body.elder-mode .step-pill {
+  font-size: 0.95rem;
+}
+
+body.elder-mode .policy-drawer > summary {
+  font-size: 1.08rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
   }
 }
 
