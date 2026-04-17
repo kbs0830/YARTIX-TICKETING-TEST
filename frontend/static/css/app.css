@@ -378,14 +378,25 @@ body.bg-ready {
 }
 
 .step-actions {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
   gap: 10px;
   margin-top: 12px;
 }
 
 .step-actions .btn {
   border-radius: 10px;
+  min-width: 124px;
+}
+
+.step-actions .btn-prev {
+  margin-right: auto;
+}
+
+.step-actions .btn-next,
+.step-actions .btn-next-person {
+  margin-left: auto;
 }
 
 .step-actions .btn-primary {
@@ -473,10 +484,6 @@ button:focus,
   .confirm-shell {
     padding: 14px;
     border-radius: 14px;
-  }
-
-  .step-actions {
-    grid-template-columns: 1fr;
   }
 
   .participant-pager {

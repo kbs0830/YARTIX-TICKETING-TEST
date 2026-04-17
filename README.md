@@ -55,10 +55,26 @@ python run.py
 
 ## 部署與標準規範
 
-- WSGI 啟動點：`backend.app:app`
+- WSGI 啟動點：`backend.app:app`（支援遺留式 `gunicorn app:app` via 根目錄 app.py shim）
 - Render 啟動命令：`gunicorn backend.app:app`
 - 前後端分離：後端位於 `backend/`，前端資源位於 `frontend/`
 - 設定與敏感資訊：`.env`、`credentials.json` 不進版控
+
+## 最近更新
+
+### 前端改進
+- 參加者選擇器：從 Prev/Next 按鈕改為下拉式選單（選擇要修改第幾位）
+- 步驟按鈕對齐：左右分別為上一位/下一位操作
+
+### 支付信重新設計（2026-04-17）
+- 品牌識別：「台灣鐵道文化意象 TWRIC」
+- 主旨：「【台灣鐵道文化意象 TWRIC】您的報名已完成！請查閱付款資訊與明細」
+- 回報方式：編號清單（1. LINE 私訊管理員 / 2. Email 回覆），含「帳號後五碼」快速對帳
+- 參加者明細：精簡卡片式佈局，包含序號、票種、飲食、加購項目、小計
+- 行動裝置適配：響應式 CSS 設計
+
+### 部署修復
+- 根目錄 `app.py` 相容性 shim，允許遺留式 `gunicorn app:app` 命令運作
 
 ## API
 

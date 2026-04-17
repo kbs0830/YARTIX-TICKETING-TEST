@@ -92,7 +92,7 @@ class EmailService:
 
         total_easycard_qty = 0
         participant_lines = []
-        for row in rows:
+        for index, row in enumerate(rows, start=1):
             easycard_qty = max(0, to_int(row.get('加購_easycard', 0)))
             total_easycard_qty += easycard_qty
             addon_text = (
@@ -102,40 +102,38 @@ class EmailService:
             )
             serial_text = str(row.get('報名序號', '')).strip() or '無'
             participant_lines.append(
-                f"- 姓名：{row.get('姓名', '')}\n"
-                f"  報名序號：{serial_text}\n"
-                f"  身分證：{mask_id_number(row.get('身分證字號', ''))}\n"
-                f"  出生日期：{row.get('出生年月日', '')}\n"
-                f"  聯絡電話：{row.get('電話號碼', '')}\n"
-                f"  Email：{row.get('電子郵件', '')}\n"
-                f"  票種：{row.get('票種', '')}\n"
-                f"  飲食：{row.get('飲食選擇', '')}\n"
-                f"  加購：{addon_text}\n"
-                f"  小計：NT$ {row.get('金額', 0)}"
+                f"【參加者{index}】\n"
+                f"姓名：{row.get('姓名', '')}\n"
+                f"報名序號：{serial_text}\n"
+                f"票種：{row.get('票種', '')}\n"
+                f"飲食：{row.get('飲食選擇', '')}\n"
+                f"加購項目：{addon_text}\n"
+                f"小計：NT$ {row.get('金額', 0)}"
             )
 
         participants_text = '\n'.join(participant_lines)
-        easycard_summary = (
-            f"{easycard_label}：有（共 {total_easycard_qty} 張，NT$ {total_easycard_qty * easycard_price}）"
-            if total_easycard_qty > 0
-            else f"{easycard_label}：無"
-        )
+        account_name = '台灣鐵道文化意象 TWRIC'
 
         return (
-            '您好，您的報名已完成，以下為付款資訊：\n\n'
-            f"報名人數：{len(rows)}\n"
+            '您好，\n\n'
+            '感謝您的報名！您的報名手續已初步完成，為保留您的名額，請於期限內完成繳費。\n\n'
+            '【付款資訊】\n'
             f"銀行：{bank_info['銀行']}\n"
             f"帳號：{bank_info['帳號']}\n"
-            '待款項查證後會郵寄通知付款成功，請耐心等待。\n'
-            f"戶名：{bank_info['戶名']}\n"
-            f"總金額：NT$ {total_amount}\n"
-            f"{easycard_summary}\n"
-            f"報名序號：{', '.join(serials) if serials else '無'}\n"
-            f"付款期限：{self.config.payment_deadline_text}\n\n"
-            f'參加者完整明細：\n{participants_text}\n\n'
-            f'LINE 群組連結：{line_group_link}\n\n'
-            '提醒：若匯款後需回報，請於信件主旨附上報名序號。\n'
-            '若有疑問請回覆本信，謝謝。'
+            f"戶名：{account_name}\n"
+            f"應付總金額：NT$ {total_amount}\n\n"
+            '【重要提醒：匯款後請務必回報】\n'
+            '完成匯款後，請透過以下任一方式回報，並提供「報名序號」與「帳號後五碼」，以便快速對帳：\n'
+            '1. LINE 回報：加入下方活動 LINE 群組後，直接私訊管理員。\n'
+            '2. Email 回報：直接回覆本信件。\n'
+            '（待款項查證後，我們將寄送付款成功通知，請耐心等候。）\n\n'
+            '【專屬 LINE 群組】\n'
+            '若有公告資料會在群組，或是回傳匯款明細也可以找到主辦方私訊，方便查帳。\n'
+            f"LINE 群組：{line_group_link}\n\n"
+            f"【報名明細確認（共 {len(rows)} 位）】\n\n{participants_text}\n\n"
+            '若您對訂單有任何疑問，歡迎透過 LINE 群組或回覆本信件與我們聯繫。\n'
+            '期待在活動中與您相見！\n\n'
+            '台灣鐵道文化意象 TWRIC 敬上'
         )
 
     def build_payment_email_html(self, rows: List[Dict], total_amount: int, bank_info: Dict[str, str], line_group_link: str) -> str:
@@ -160,7 +158,7 @@ class EmailService:
 
         total_easycard_qty = 0
         participant_html_blocks = []
-        for row in rows:
+        for index, row in enumerate(rows, start=1):
             easycard_qty = max(0, to_int(row.get('加購_easycard', 0)))
             total_easycard_qty += easycard_qty
             addon_text = (
@@ -171,26 +169,19 @@ class EmailService:
 
             participant_html_blocks.append(
                 (
-                    '<li style="margin-bottom:12px;">'
+                    '<div class="participant">'
+                    f"<p class=\"participant-title\">【參加者{index}】</p>"
                     f"<div>姓名：{self._escape_html(row.get('姓名', ''))}</div>"
                     f"<div>報名序號：{self._escape_html(row.get('報名序號', ''))}</div>"
-                    f"<div>身分證：{self._escape_html(mask_id_number(row.get('身分證字號', '')))}</div>"
-                    f"<div>出生日期：{self._escape_html(row.get('出生年月日', ''))}</div>"
-                    f"<div>聯絡電話：{self._escape_html(row.get('電話號碼', ''))}</div>"
-                    f"<div>Email：{self._escape_html(row.get('電子郵件', ''))}</div>"
                     f"<div>票種：{self._escape_html(row.get('票種', ''))}</div>"
                     f"<div>飲食：{self._escape_html(row.get('飲食選擇', ''))}</div>"
-                    f"<div>加購：{self._escape_html(addon_text)}</div>"
+                    f"<div>加購項目：{self._escape_html(addon_text)}</div>"
                     f"<div>小計：NT$ {self._escape_html(row.get('金額', 0))}</div>"
-                    '</li>'
+                    '</div>'
                 )
             )
 
-        easycard_summary = (
-            f"{easycard_label}：有（共 {total_easycard_qty} 張，NT$ {total_easycard_qty * easycard_price}）"
-            if total_easycard_qty > 0
-            else f"{easycard_label}：無"
-        )
+        account_name = '台灣鐵道文化意象 TWRIC'
 
         return (
             '<!doctype html>'
@@ -199,42 +190,65 @@ class EmailService:
             '<meta charset="utf-8">'
             '<meta name="viewport" content="width=device-width, initial-scale=1">'
             '<style>'
-            'body{margin:0;padding:0;background:#f8fafc;color:#1f2937;font-family:Arial,"Noto Sans TC",sans-serif;line-height:1.65;}'
+            'body{margin:0;padding:0;background:#f8fafc;color:#1f2937;font-family:Arial,"Noto Sans TC",sans-serif;line-height:1.7;}'
             '.wrap{max-width:680px;margin:0 auto;padding:14px;}'
             '.card{background:#ffffff;border:1px solid #e2e8f0;border-radius:12px;padding:14px;}'
-            '.row{margin:6px 0;font-size:15px;}'
-            '.total{margin:14px 0 8px 0;font-size:34px;font-weight:900;color:#b91c1c;line-height:1.25;}'
-            '.sub-title{margin:16px 0 8px 0;font-size:18px;font-weight:800;}'
-            '.note{margin:8px 0;color:#0f172a;}'
-            '.list{padding-left:18px;margin:0;}'
-            '.list li{margin-bottom:12px;}'
+            '.intro{margin:0 0 10px 0;font-size:16px;}'
+            '.section{margin:14px 0 0 0;}'
+            '.section-title{margin:0 0 8px 0;font-size:18px;font-weight:800;color:#0f172a;}'
+            '.pay-box{padding:10px 12px;border:1px solid #dbeafe;border-radius:10px;background:#f8fbff;}'
+            '.row{margin:4px 0;font-size:15px;}'
+            '.strong{font-weight:800;}'
+            '.pay-blue{color:#1d4ed8;}'
+            '.total{margin:10px 0 2px 0;font-size:22px;font-weight:900;color:#1d4ed8;line-height:1.25;}'
+            '.hint{margin:8px 0 0 0;color:#334155;font-size:14px;}'
+            '.report-list{margin:8px 0 0 20px;padding:0;}'
+            '.report-list li{margin:4px 0;}'
+            '.line-link{display:inline-block;margin-top:4px;color:#0f5ac4;font-weight:700;word-break:break-all;}'
+            '.participant{margin:10px 0;padding:10px;border:1px solid #e2e8f0;border-radius:10px;background:#fcfdff;}'
+            '.participant-title{margin:0 0 6px 0;font-size:15px;font-weight:800;color:#0f172a;}'
+            '.closing{margin-top:14px;font-size:14px;color:#1f2937;}'
             '@media screen and (max-width:480px){'
             '.wrap{padding:10px;}'
             '.card{padding:12px;}'
+            '.intro{font-size:16px;}'
             '.row{font-size:14px;}'
-            '.sub-title{font-size:16px;}'
-            '.total{font-size:28px;}'
+            '.total{font-size:19px;}'
             '}'
             '</style>'
             '</head>'
             '<body>'
             '<div class="wrap">'
             '<div class="card">'
-            '<h2 style="margin:0 0 12px 0;font-size:22px;">您好，您的報名已完成，以下為付款資訊：</h2>'
-            f"<p class=\"row\">報名人數：{len(rows)}</p>"
-            f"<p class=\"row\">銀行：{self._escape_html(bank_info['銀行'])}</p>"
-            f"<p class=\"row\">帳號：{self._escape_html(bank_info['帳號'])}</p>"
-            '<p class="note">待款項查證後會郵寄通知付款成功，請耐心等待。</p>'
-            f"<p class=\"row\">戶名：{self._escape_html(bank_info['戶名'])}</p>"
-            f"<p class=\"total\">總金額：NT$ {total_amount}</p>"
-            f"<p class=\"row\">{self._escape_html(easycard_summary)}</p>"
-            f"<p class=\"row\">報名序號：{self._escape_html(', '.join(serials) if serials else '無')}</p>"
-            f"<p class=\"row\">付款期限：{self._escape_html(self.config.payment_deadline_text)}</p>"
-            '<h3 class="sub-title">參加者完整明細：</h3>'
-            f"<ul class=\"list\">{''.join(participant_html_blocks)}</ul>"
-            f"<p class=\"row\" style=\"margin-top:16px;\">LINE 群組連結：<a href=\"{self._escape_html(line_group_link)}\" target=\"_blank\" rel=\"noreferrer\">{self._escape_html(line_group_link)}</a></p>"
-            '<p class="row">提醒：若匯款後需回報，請於信件主旨附上報名序號。</p>'
-            '<p class="row">若有疑問請回覆本信，謝謝。</p>'
+            '<p class="intro">您好，</p>'
+            '<p class="intro">感謝您的報名！您的報名手續已初步完成，為保留您的名額，請於期限內完成繳費。</p>'
+            '<div class="section">'
+            '<h3 class="section-title">付款資訊</h3>'
+            '<div class="pay-box">'
+            f"<p class=\"row strong\">銀行：{self._escape_html(bank_info['銀行'])}</p>"
+            f"<p class=\"row strong\">帳號：{self._escape_html(bank_info['帳號'])}</p>"
+            f"<p class=\"row strong\">戶名：{self._escape_html(account_name)}</p>"
+            f"<p class=\"total\">應付總金額：NT$ {total_amount}</p>"
+            '</div>'
+            '<div class="section">'
+            '<h3 class="section-title">【重要提醒：匯款後請務必回報】</h3>'
+            '<p class="row">完成匯款後，請透過以下任一方式回報，並提供「報名序號」與「帳號後五碼」，以便快速對帳：</p>'
+            '<ol class="report-list">'
+            '<li><strong>LINE 回報</strong>：加入下方活動 LINE 群組後，直接私訊管理員。</li>'
+            '<li><strong>Email 回報</strong>：直接回覆本信件。</li>'
+            '</ol>'
+            '<p class="hint">（待款項查證後，我們將寄送付款成功通知，請耐心等候。）</p>'
+            '</div>'
+            '<div class="section">'
+            '<h3 class="section-title">專屬 LINE 群組</h3>'
+            '<p class="row">若有公告資料會在群組，或是回傳匯款明細也可以找到主辦方私訊，方便查帳。</p>'
+            f"<a class=\"line-link\" href=\"{self._escape_html(line_group_link)}\" target=\"_blank\" rel=\"noreferrer\">點此加入活動專屬 LINE 群組</a>"
+            '</div>'
+            '<div class="section">'
+            f"<h3 class=\"section-title\">報名明細確認（共 {len(rows)} 位）</h3>"
+            f"{''.join(participant_html_blocks)}"
+            '</div>'
+            '<p class="closing">若您對訂單有任何疑問，歡迎透過 LINE 群組或回覆本信件與我們聯繫。<br>期待在活動中與您相見！<br><br>台灣鐵道文化意象 TWRIC 敬上</p>'
             '</div>'
             '</div>'
             '</body>'
@@ -248,7 +262,7 @@ class EmailService:
             if email and email not in recipients:
                 recipients.append(email)
 
-        subject = '【春映洄瀾，拾光】普悠瑪專列，付款資訊通知'
+        subject = '【台灣鐵道文化意象 TWRIC】您的報名已完成！請查閱付款資訊與明細'
         body = self.build_payment_email_body(rows, total_amount, bank_info, line_group_link)
         html_body = self.build_payment_email_html(rows, total_amount, bank_info, line_group_link)
         ok, err_code, message = self.send_email_smtp(recipients, subject, body, html_body=html_body)
